@@ -177,7 +177,7 @@ export async function listInvites(practiceId: string) {
 
   const publicBaseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:5173';
 
-  return invites.map((invite) => ({
+  return invites.map((invite: { id: string; email: string; role: any; token: string; expiresAt: Date; acceptedAt: Date | null; createdAt: Date }) => ({
     id: invite.id,
     email: invite.email,
     role: invite.role,

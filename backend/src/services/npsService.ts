@@ -70,11 +70,11 @@ export async function getNpsAggregate(
 
   const responseCount = responses.length;
   const avgScore =
-    responseCount > 0 ? responses.reduce((sum, r) => sum + r.score, 0) / responseCount : null;
+    responseCount > 0 ? responses.reduce((sum: number, r: { score: number }) => sum + r.score, 0) / responseCount : null;
 
   const latestComments = responses
     .slice(0, 10)
-    .map((r) => ({
+    .map((r: { score: number; comment: string | null }) => ({
       score: r.score,
       comment: r.comment,
       createdAt: r.createdAt.toISOString(),

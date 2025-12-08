@@ -103,12 +103,12 @@ export async function submitTrainingAttempt(params: {
   }
 
   // Decode correct codes from JSON
-  const correctDiagnosisCodes = Array.isArray(trainingCase.correctDiagnosisCodes)
+  const correctDiagnosisCodes: string[] = Array.isArray(trainingCase.correctDiagnosisCodes)
     ? (trainingCase.correctDiagnosisCodes as string[])
-    : JSON.parse(trainingCase.correctDiagnosisCodes as string);
-  const correctProcedureCodes = Array.isArray(trainingCase.correctProcedureCodes)
+    : (JSON.parse(trainingCase.correctDiagnosisCodes as string) as string[]);
+  const correctProcedureCodes: string[] = Array.isArray(trainingCase.correctProcedureCodes)
     ? (trainingCase.correctProcedureCodes as string[])
-    : JSON.parse(trainingCase.correctProcedureCodes as string);
+    : (JSON.parse(trainingCase.correctProcedureCodes as string) as string[]);
 
   // Normalize codes for comparison
   const correctEmNormalized = normalizeCode(trainingCase.correctEmCode);
@@ -119,18 +119,18 @@ export async function submitTrainingAttempt(params: {
   const emNear = !emExact && isEmNear(userEmCode, trainingCase.correctEmCode);
 
   // Diagnosis scoring
-  const correctDxSet = new Set(correctDiagnosisCodes.map(normalizeCode));
-  const userDxSet = new Set(userDiagnosisCodes.map(normalizeCode));
-  const correctDxHits = new Set([...userDxSet].filter((x) => correctDxSet.has(x)));
-  const missingDxCodes = new Set([...correctDxSet].filter((x) => !userDxSet.has(x)));
-  const extraDxCodes = new Set([...userDxSet].filter((x) => !correctDxSet.has(x)));
+  const correctDxSet = new Set<string>(correctDiagnosisCodes.map(normalizeCode));
+  const userDxSet = new Set<string>(userDiagnosisCodes.map(normalizeCode));
+  const correctDxHits = new Set<string>([...userDxSet].filter((x) => correctDxSet.has(x)));
+  const missingDxCodes = new Set<string>([...correctDxSet].filter((x) => !userDxSet.has(x)));
+  const extraDxCodes = new Set<string>([...userDxSet].filter((x) => !correctDxSet.has(x)));
 
   // Procedure scoring
-  const correctProcSet = new Set(correctProcedureCodes.map(normalizeCode));
-  const userProcSet = new Set(userProcedureCodes.map(normalizeCode));
-  const correctProcHits = new Set([...userProcSet].filter((x) => correctProcSet.has(x)));
-  const missingProcCodes = new Set([...correctProcSet].filter((x) => !userProcSet.has(x)));
-  const extraProcCodes = new Set([...userProcSet].filter((x) => !correctProcSet.has(x)));
+  const correctProcSet = new Set<string>(correctProcedureCodes.map(normalizeCode));
+  const userProcSet = new Set<string>(userProcedureCodes.map(normalizeCode));
+  const correctProcHits = new Set<string>([...userProcSet].filter((x) => correctProcSet.has(x)));
+  const missingProcCodes = new Set<string>([...correctProcSet].filter((x) => !userProcSet.has(x)));
+  const extraProcCodes = new Set<string>([...userProcSet].filter((x) => !correctProcSet.has(x)));
 
   // Calculate scores
   let emScore = 0;

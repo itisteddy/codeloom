@@ -202,9 +202,9 @@ export async function updateEncounterCodes(
   const prevProc = decodeFinalProceduresJson(current.finalProceduresJson);
   const prevEmCode = current.finalEmCode;
 
-  // Use provided codes or keep existing
-  const nextDiag = finalDiagnosisCodes !== undefined ? finalDiagnosisCodes : prevDiag;
-  const nextProc = finalProcedureCodes !== undefined ? finalProcedureCodes : prevProc;
+  // Use provided codes or keep existing (convert null to empty array)
+  const nextDiag: FinalDiagnosisCode[] = finalDiagnosisCodes !== undefined ? (finalDiagnosisCodes || []) : prevDiag;
+  const nextProc: FinalProcedureCode[] = finalProcedureCodes !== undefined ? (finalProcedureCodes || []) : prevProc;
   const nextEmCode = finalEmCode !== undefined ? finalEmCode : prevEmCode;
 
   // Compute diffs

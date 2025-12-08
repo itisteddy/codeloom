@@ -24,6 +24,7 @@ import { ensureEncounterCreationAllowed } from '../services/entitlementService';
 import { incrementUsage } from '../services/usageService';
 import { getPracticeConfiguration } from '../services/practiceConfigService';
 import { getPilotConfig } from '../services/pilotConfigService';
+import { submitEncounterFeedback, getEncounterFeedback } from '../services/feedbackService';
 
 export const encountersRouter = Router();
 
@@ -82,7 +83,7 @@ encountersRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res) =>
     });
 
     // Format response with provider name
-    const formatted = encounters.map((enc) => ({
+    const formatted = encounters.map((enc: any) => ({
       id: enc.id,
       practiceId: enc.practiceId,
       providerId: enc.providerId,
@@ -249,7 +250,7 @@ encountersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, re
     });
 
     // Log audit event - only log status changes, not PHI fields
-    const changedFields = Object.keys(patch).filter((k) => k !== 'noteText' && k !== 'patientPseudoId');
+    const changedFields = Object.keys(patch).filter((k: string) => k !== 'noteText' && k !== 'patientPseudoId');
     if (changedFields.length > 0) {
       await logAuditEvent({
         practiceId: req.user!.practiceId,
@@ -331,8 +332,8 @@ encountersRouter.patch('/:id/codes', requireAuth, async (req: AuthenticatedReque
       });
     }
 
-    const addedDxCodes = diffs.addedDiagnoses.map((d) => d.code);
-    const removedDxCodes = diffs.removedDiagnoses.map((d) => d.code);
+    const addedDxCodes = diffs.addedDiagnoses.map((d: FinalDiagnosisCode) => d.code);
+    const removedDxCodes = diffs.removedDiagnoses.map((d: FinalDiagnosisCode) => d.code);
     if (addedDxCodes.length > 0) {
       await logAuditEvent({
         practiceId: req.user!.practiceId,
@@ -364,8 +365,8 @@ encountersRouter.patch('/:id/codes', requireAuth, async (req: AuthenticatedReque
 
     // For procedures, log changes (changed procedures are tracked as before/after)
     if (diffs.changedProcedures.length > 0) {
-      const addedProcCodes = diffs.changedProcedures.map((p) => p.after.code);
-      const removedProcCodes = diffs.changedProcedures.map((p) => p.before.code);
+      const addedProcCodes = diffs.changedProcedures.map((p: { before: FinalProcedureCode; after: FinalProcedureCode }) => p.after.code);
+      const removedProcCodes = diffs.changedProcedures.map((p: { before: FinalProcedureCode; after: FinalProcedureCode }) => p.before.code);
       await logAuditEvent({
         practiceId: req.user!.practiceId,
         encounterId: encounter.id,
@@ -515,7 +516,7 @@ encountersRouter.get('/:id/audit', requireAuth, requireRole(['biller', 'admin'])
       orderBy: { createdAt: 'asc' },
     });
 
-    const dto = events.map((e) => ({
+    const dto = events.map((e: any) => ({
       id: e.id,
       action: e.action,
       userId: e.userId,

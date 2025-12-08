@@ -98,7 +98,7 @@ export async function getEncounterFeedbackStats(
   });
 
   const total = feedbacks.length;
-  const helpful = feedbacks.filter((f) => f.helpful).length;
+  const helpful = feedbacks.filter((f: { helpful: boolean }) => f.helpful).length;
   const helpfulRate = total > 0 ? helpful / total : null;
 
   return {

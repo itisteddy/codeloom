@@ -9,10 +9,12 @@ export type SafeAuditPayload =
   | { field: 'diagnosisCodes'; added: string[]; removed: string[] }
   | { field: 'procedureCodes'; added: string[]; removed: string[] }
   | { field: 'status'; from: string; to: string }
-  | { type: 'AI_SUGGESTION'; hasEm: boolean; dxCount: number; procCount: number }
+  | { type: 'AI_SUGGESTION'; hasEm: boolean; dxCount: number; procCount: number; modelId?: string }
   | { type: 'TRAINING_ATTEMPT'; scorePercent: number }
   | { type: 'SECURITY_EVENT'; event: 'LOGIN' | 'FAILED_LOGIN' | 'LOGOUT'; ip?: string }
-  | { type: 'ENCOUNTER_CREATED' | 'ENCOUNTER_UPDATED'; metadataOnly: true };
+  | { type: 'ENCOUNTER_CREATED' | 'ENCOUNTER_UPDATED'; metadataOnly: true }
+  | { type: 'AI_SAFETY'; filteredCodesCount: number; hadInvalidCodes: boolean; hadFormatIssues: boolean; modelId: string }
+  | { type: 'AI_FEEDBACK'; helpful: boolean };
 
 export async function logAuditEvent(params: {
   practiceId: string;

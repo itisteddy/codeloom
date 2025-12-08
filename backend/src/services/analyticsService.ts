@@ -38,30 +38,30 @@ export async function getPracticeAnalyticsSummary(params: {
   });
 
   const encounterCount = encounters.length;
-  const finalizedCount = encounters.filter((e) => e.status === 'finalized').length;
+  const finalizedCount = encounters.filter((e: { status: string }) => e.status === 'finalized').length;
   const aiSuggestedCount = encounters.filter(
-    (e) => e.aiEmSuggested !== null || e.status === 'ai_suggested'
+    (e: { aiEmSuggested: string | null; status: string }) => e.aiEmSuggested !== null || e.status === 'ai_suggested'
   ).length;
 
   const aiUsageRate = encounterCount > 0 ? aiSuggestedCount / encounterCount : 0;
 
   // Calculate avgTimeToFinalizeMinutes
-  const finalizedEncounters = encounters.filter((e) => e.finalizedAt !== null);
+  const finalizedEncounters = encounters.filter((e: { finalizedAt: Date | null }) => e.finalizedAt !== null);
   let avgTimeToFinalizeMinutes: number | null = null;
   if (finalizedEncounters.length > 0) {
-    const times = finalizedEncounters.map((e) => {
+    const times = finalizedEncounters.map((e: { createdAt: Date; finalizedAt: Date }) => {
       const createdAt = e.createdAt.getTime();
-      const finalizedAt = e.finalizedAt!.getTime();
+      const finalizedAt = e.finalizedAt.getTime();
       return (finalizedAt - createdAt) / (1000 * 60); // minutes
     });
-    avgTimeToFinalizeMinutes = times.reduce((a, b) => a + b, 0) / times.length;
+    avgTimeToFinalizeMinutes = times.reduce((sum: number, a: number) => sum + a, 0) / times.length;
   }
 
   // Calculate overrideRate
-  const encountersWithAiEm = encounters.filter((e) => e.aiEmSuggested !== null);
+  const encountersWithAiEm = encounters.filter((e: { aiEmSuggested: string | null }) => e.aiEmSuggested !== null);
   const overrideDenominator = encountersWithAiEm.length;
   const overrideNumerator = encountersWithAiEm.filter(
-    (e) => e.finalEmCode !== null && e.finalEmCode !== e.aiEmSuggested
+    (e: { finalEmCode: string | null; aiEmSuggested: string | null }) => e.finalEmCode !== null && e.finalEmCode !== e.aiEmSuggested
   ).length;
   const overrideRate = overrideDenominator > 0 ? overrideNumerator / overrideDenominator : 0;
 
@@ -84,7 +84,7 @@ export async function getPracticeAnalyticsSummary(params: {
   const trainingAttemptsCount = attempts.length;
   let avgTrainingScorePercent: number | null = null;
   if (attempts.length > 0) {
-    const totalScore = attempts.reduce((sum, a) => sum + a.scorePercent, 0);
+    const totalScore = attempts.reduce((sum: number, a: { scorePercent: number }) => sum + a.scorePercent, 0);
     avgTrainingScorePercent = totalScore / attempts.length;
   }
 
