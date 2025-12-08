@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
 
 export const LoginPage: React.FC = () => {
   const { user, login, isLoading, error } = useAuth();
@@ -20,43 +23,63 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 bg-white shadow rounded p-6">
-      <h2 className="text-lg font-semibold mb-4">Sign in to Codeloom</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            className="border rounded px-3 py-2 w-full text-sm"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    <div className="min-h-screen bg-slate-50">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+        {/* Left brand column */}
+        <div className="hidden lg:flex flex-col justify-center gap-6 bg-slate-900 px-12 text-slate-100">
+          <div>
+            <div className="text-2xl font-semibold">Codeloom</div>
+            <p className="mt-2 text-sm text-slate-300">
+              AI-assisted medical coding for small practices.
+            </p>
+          </div>
+          <div className="space-y-2 text-sm text-slate-200">
+            <p>• Turn free-text notes into compliant, revenue-optimized codes.</p>
+            <p>• Biller-first controls with audit trail ready.</p>
+            <p>• Training mode to level-up providers.</p>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            className="border rounded px-3 py-2 w-full text-sm"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+
+        {/* Right form column */}
+        <div className="flex items-center justify-center px-6 py-12">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Sign in to Codeloom</CardTitle>
+              <CardDescription>
+                Use the seeded test account (e.g., provider@example.com / changeme123) for now.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                {error && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+                <Button type="submit" className="w-full" loading={isLoading}>
+                  {isLoading ? 'Signing in…' : 'Sign in'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          className="bg-slate-900 text-white text-sm px-4 py-2 rounded disabled:opacity-60"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-      <p className="mt-4 text-xs text-slate-600">
-        Use the seeded test accounts for now (e.g. provider@example.com / changeme123).
-      </p>
+      </div>
     </div>
   );
 };

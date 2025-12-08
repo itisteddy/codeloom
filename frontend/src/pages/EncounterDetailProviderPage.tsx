@@ -4,6 +4,10 @@ import { useAuth } from '../auth/AuthContext';
 import { getEncounter, updateEncounterMetadata, runSuggestions, EncounterDto } from '../api/encounters';
 import { EncounterSuggestionsPanel } from '../components/encounters/EncounterSuggestionsPanel';
 import { EncounterFeedbackPanel } from '../components/encounters/EncounterFeedbackPanel';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 
 export const EncounterDetailProviderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -90,20 +94,25 @@ export const EncounterDetailProviderPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-slate-600">Loading encounter...</div>;
+    return (
+      <Card>
+        <CardContent className="flex justify-center py-12">
+          <Spinner />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (error && !encounter) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">{error}</div>
-        <button
-          onClick={() => navigate('/encounters')}
-          className="mt-4 text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to Encounters
-        </button>
-      </div>
+      <Card className="max-w-2xl">
+        <CardContent>
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">{error}</div>
+          <Button variant="ghost" className="mt-4 text-sm" onClick={() => navigate('/encounters')}>
+            ← Back to Encounters
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -117,93 +126,76 @@ export const EncounterDetailProviderPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-4">
-        <button
-          onClick={() => navigate('/encounters')}
-          className="text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to Encounters
-        </button>
-      </div>
+    <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/encounters')}>
+        ← Back to Encounters
+      </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column - Form */}
-        <div className="lg:col-span-2">
-          <h1 className="text-2xl font-semibold mb-4">Encounter Details</h1>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Patient ID</label>
-              <input
-                type="text"
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Encounter Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              <Input
+                label="Patient ID"
                 value={patientPseudoId}
                 onChange={(e) => setPatientPseudoId(e.target.value)}
-                className="border rounded px-3 py-2 w-full text-sm"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Encounter Date</label>
-              <input
+              <Input
+                label="Encounter Date"
                 type="date"
                 value={encounterDate}
                 onChange={(e) => setEncounterDate(e.target.value)}
-                className="border rounded px-3 py-2 w-full text-sm"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Visit Type</label>
-              <select
-                value={visitType}
-                onChange={(e) => setVisitType(e.target.value)}
-                className="border rounded px-3 py-2 w-full text-sm"
-              >
-                <option value="office_established">Office - Established Patient</option>
-                <option value="office_new">Office - New Patient</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Specialty</label>
-              <input
-                type="text"
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Visit Type</span>
+                <select
+                  value={visitType}
+                  onChange={(e) => setVisitType(e.target.value)}
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                >
+                  <option value="office_established">Office - Established Patient</option>
+                  <option value="office_new">Office - New Patient</option>
+                </select>
+              </label>
+              <Input
+                label="Specialty"
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
-                className="border rounded px-3 py-2 w-full text-sm"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Note Text</label>
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                rows={15}
-                className="border rounded px-3 py-2 w-full text-sm font-mono"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-              <div className="text-xs text-slate-500">
-                Last updated: {formatDate(encounter.updatedAt)}
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Note Text</span>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  rows={12}
+                  className="thin-scrollbar w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-mono shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                />
+              </label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Button onClick={handleSave} loading={isSaving} variant="secondary">
+                  Save
+                </Button>
+                <div className="text-xs text-slate-500">
+                  Last updated: {formatDate(encounter.updatedAt)}
+                </div>
+                <div className="flex items-center gap-2">
+                  {suggestError && <span className="text-sm text-red-600">{suggestError}</span>}
+                  <Button onClick={handleRunCodeloom} loading={isRunningSuggest}>
+                    Run Codeloom
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Suggestions */}

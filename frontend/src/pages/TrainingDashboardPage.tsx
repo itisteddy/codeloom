@@ -6,6 +6,10 @@ import {
   TrainingCaseSummary,
   TrainingDifficulty,
 } from '../api/training';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
+import { Badge } from '../components/ui/Badge';
 
 export const TrainingDashboardPage: React.FC = () => {
   const { token } = useAuth();
@@ -40,123 +44,119 @@ export const TrainingDashboardPage: React.FC = () => {
     return date.toLocaleDateString();
   };
 
-  const getDifficultyColor = (difficulty: TrainingDifficulty) => {
+  const getDifficultyVariant = (difficulty: TrainingDifficulty) => {
     switch (difficulty) {
       case 'easy':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'hard':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-slate-100 text-slate-800';
+        return 'default';
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Training Cases</h1>
-
-      {/* Filters */}
-      <div className="mb-6 flex gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Specialty</label>
-          <select
-            value={filters.specialty || ''}
-            onChange={(e) =>
-              setFilters({ ...filters, specialty: e.target.value || undefined })
-            }
-            className="border rounded px-3 py-2 text-sm"
-          >
-            <option value="">All</option>
-            <option value="primary_care">Primary Care</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Difficulty</label>
-          <select
-            value={filters.difficulty || ''}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                difficulty: (e.target.value || undefined) as TrainingDifficulty | undefined,
-              })
-            }
-            className="border rounded px-3 py-2 text-sm"
-          >
-            <option value="">All</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Training Cases</h1>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-4">
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Specialty</span>
+            <select
+              value={filters.specialty || ''}
+              onChange={(e) => setFilters({ ...filters, specialty: e.target.value || undefined })}
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            >
+              <option value="">All</option>
+              <option value="primary_care">Primary Care</option>
+            </select>
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-slate-700">Difficulty</span>
+            <select
+              value={filters.difficulty || ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  difficulty: (e.target.value || undefined) as TrainingDifficulty | undefined,
+                })
+              }
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            >
+              <option value="">All</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+        </CardContent>
+      </Card>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {isLoading ? (
-        <div className="text-center py-8 text-slate-600">Loading training cases...</div>
-      ) : cases.length === 0 ? (
-        <div className="text-center py-8 text-slate-500">No training cases found</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse border border-slate-300">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-                  Title
-                </th>
-                <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-                  Specialty
-                </th>
-                <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-                  Difficulty
-                </th>
-                <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-                  Created
-                </th>
-                <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map((case_) => (
-                <tr key={case_.id} className="hover:bg-slate-50">
-                  <td className="border border-slate-300 px-4 py-2 text-sm">{case_.title}</td>
-                  <td className="border border-slate-300 px-4 py-2 text-sm">
-                    {case_.specialty.replace('_', ' ')}
-                  </td>
-                  <td className="border border-slate-300 px-4 py-2 text-sm">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(
-                        case_.difficulty
-                      )}`}
-                    >
-                      {case_.difficulty.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="border border-slate-300 px-4 py-2 text-sm">
-                    {formatDate(case_.createdAt)}
-                  </td>
-                  <td className="border border-slate-300 px-4 py-2 text-sm">
-                    <button
-                      onClick={() => navigate(`/training/cases/${case_.id}`)}
-                      className="bg-slate-900 text-white px-3 py-1 rounded text-sm hover:bg-slate-800"
-                    >
-                      Open
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cases</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Spinner />
+            </div>
+          ) : cases.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">No training cases found</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-left text-sm font-medium text-slate-700">
+                    <th className="px-4 py-2">Title</th>
+                    <th className="px-4 py-2">Specialty</th>
+                    <th className="px-4 py-2">Difficulty</th>
+                    <th className="px-4 py-2">Created</th>
+                    <th className="px-4 py-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {cases.map((case_) => (
+                    <tr key={case_.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm text-slate-900">{case_.title}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {case_.specialty.replace('_', ' ')}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Badge variant={getDifficultyVariant(case_.difficulty)}>
+                          {case_.difficulty.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {formatDate(case_.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button size="sm" variant="secondary" onClick={() => navigate(`/training/cases/${case_.id}`)}>
+                          Open
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

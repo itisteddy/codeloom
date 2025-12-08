@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { listEncounters, EncounterSummaryDto } from '../api/encounters';
 import { EncounterTable } from '../components/encounters/EncounterTable';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 
 export const EncountersListPage: React.FC = () => {
   const { token } = useAuth();
@@ -32,30 +35,45 @@ export const EncountersListPage: React.FC = () => {
     navigate(`/encounters/${id}`);
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Encounters</h1>
-        <button
-          onClick={() => navigate('/encounters/new')}
-          className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800"
-        >
-          New Encounter
-        </button>
+  const renderEmpty = () => (
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <div className="mb-3 text-lg font-semibold text-slate-900">No encounters yet</div>
+      <p className="text-sm text-slate-600 max-w-md">
+        Create your first encounter to see AI coding suggestions here.
+      </p>
+      <div className="mt-4">
+        <Button onClick={() => navigate('/encounters/new')}>New Encounter</Button>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="text-center py-8 text-slate-600">Loading encounters...</div>
-      ) : (
-        <EncounterTable encounters={encounters} onRowClick={handleRowClick} />
-      )}
     </div>
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Encounters</CardTitle>
+          <p className="text-sm text-slate-600">Review and manage recent encounters.</p>
+        </div>
+        <Button onClick={() => navigate('/encounters/new')}>New Encounter</Button>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Spinner />
+          </div>
+        ) : encounters.length === 0 ? (
+          renderEmpty()
+        ) : (
+          <EncounterTable encounters={encounters} onRowClick={handleRowClick} />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

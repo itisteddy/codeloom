@@ -8,6 +8,11 @@ import {
   TrainingAttemptResult,
   TrainingDifficulty,
 } from '../api/training';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Spinner } from '../components/ui/Spinner';
 
 export const TrainingCasePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -81,53 +86,55 @@ export const TrainingCasePage: React.FC = () => {
   const getDifficultyColor = (difficulty: TrainingDifficulty) => {
     switch (difficulty) {
       case 'easy':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'hard':
-        return 'bg-red-100 text-red-800';
+        return 'danger';
       default:
-        return 'bg-slate-100 text-slate-800';
+        return 'default';
     }
   };
 
   if (isLoadingCase) {
-    return <div className="text-center py-8 text-slate-600">Loading training case...</div>;
+    return (
+      <Card>
+        <CardContent className="flex justify-center py-10">
+          <Spinner />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (caseError || !trainingCase) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          {caseError || 'Training case not found'}
-        </div>
-        <button
-          onClick={() => navigate('/training')}
-          className="mt-4 text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to Training
-        </button>
-      </div>
+      <Card className="max-w-2xl">
+        <CardContent>
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
+            {caseError || 'Training case not found'}
+          </div>
+          <Button variant="ghost" className="mt-4 text-sm" onClick={() => navigate('/training')}>
+            ← Back to Training
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-4">
-        <button
-          onClick={() => navigate('/training')}
-          className="text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to Training
-        </button>
-      </div>
+    <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/training')}>
+        ← Back to Training
+      </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left Column - Case Info */}
-        <div>
-          <div className="border border-slate-200 rounded p-4 mb-4">
-            <h2 className="font-medium mb-3">Case Information</h2>
-            <div className="space-y-2 text-sm">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Case Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
               <div>
                 <span className="text-slate-600">Title:</span> {trainingCase.title}
               </div>
@@ -135,87 +142,86 @@ export const TrainingCasePage: React.FC = () => {
                 <span className="text-slate-600">Specialty:</span>{' '}
                 {trainingCase.specialty.replace('_', ' ')}
               </div>
-              <div>
-                <span className="text-slate-600">Difficulty:</span>{' '}
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(
-                    trainingCase.difficulty
-                  )}`}
-                >
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600">Difficulty:</span>
+                <Badge variant={getDifficultyColor(trainingCase.difficulty)}>
                   {trainingCase.difficulty.toUpperCase()}
-                </span>
+                </Badge>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="border border-slate-200 rounded p-4">
-            <h2 className="font-medium mb-3">Case Note</h2>
-            <div className="bg-slate-50 border rounded p-3 max-h-96 overflow-y-auto">
-              <pre className="text-sm font-mono whitespace-pre-wrap">{trainingCase.noteText}</pre>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Case Note</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="thin-scrollbar max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-slate-900">
+                  {trainingCase.noteText}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Coding Form & Results */}
-        <div>
-          <div className="border border-slate-200 rounded p-4 mb-4">
-            <h2 className="font-medium mb-3">Your Coding</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">E/M Code</label>
-                <input
-                  type="text"
-                  value={emCode}
-                  onChange={(e) => setEmCode(e.target.value)}
-                  placeholder="e.g., 99213"
-                  className="border rounded px-3 py-2 w-full text-sm"
-                  disabled={!!attemptResult}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Coding</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                label="E/M Code"
+                value={emCode}
+                onChange={(e) => setEmCode(e.target.value)}
+                placeholder="e.g., 99213"
+                disabled={!!attemptResult}
+              />
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">
                   Diagnosis Codes (comma or newline separated)
-                </label>
+                </span>
                 <textarea
                   value={diagnosisText}
                   onChange={(e) => setDiagnosisText(e.target.value)}
                   placeholder="E11.9, I10"
                   rows={4}
-                  className="border rounded px-3 py-2 w-full text-sm font-mono"
                   disabled={!!attemptResult}
+                  className="thin-scrollbar w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-mono shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">
                   Procedure Codes (comma or newline separated)
-                </label>
+                </span>
                 <textarea
                   value={procedureText}
                   onChange={(e) => setProcedureText(e.target.value)}
                   placeholder="J3420"
                   rows={4}
-                  className="border rounded px-3 py-2 w-full text-sm font-mono"
                   disabled={!!attemptResult}
+                  className="thin-scrollbar w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-mono shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
                 />
-              </div>
+              </label>
 
               {submitError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {submitError}
                 </div>
               )}
 
-              <button
+              <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !!attemptResult}
-                className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60 w-full"
+                loading={isSubmitting}
+                className="w-full"
               >
-                {isSubmitting ? 'Submitting...' : attemptResult ? 'Submitted' : 'Submit Attempt'}
-              </button>
-            </div>
-          </div>
+                {attemptResult ? 'Submitted' : 'Submit Attempt'}
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Results Card */}
           {attemptResult && (
