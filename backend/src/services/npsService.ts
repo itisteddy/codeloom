@@ -74,7 +74,7 @@ export async function getNpsAggregate(
 
   const latestComments = responses
     .slice(0, 10)
-    .map((r: { score: number; comment: string | null }) => ({
+    .map((r: { score: number; comment: string | null; createdAt: Date }) => ({
       score: r.score,
       comment: r.comment,
       createdAt: r.createdAt.toISOString(),

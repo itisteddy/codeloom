@@ -46,10 +46,10 @@ export async function getPracticeAnalyticsSummary(params: {
   const aiUsageRate = encounterCount > 0 ? aiSuggestedCount / encounterCount : 0;
 
   // Calculate avgTimeToFinalizeMinutes
-  const finalizedEncounters = encounters.filter((e: { finalizedAt: Date | null }) => e.finalizedAt !== null);
+  const finalizedEncounters = encounters.filter((e: { finalizedAt: Date | null }) => e.finalizedAt !== null) as Array<{ createdAt: Date; finalizedAt: Date }>;
   let avgTimeToFinalizeMinutes: number | null = null;
   if (finalizedEncounters.length > 0) {
-    const times = finalizedEncounters.map((e: { createdAt: Date; finalizedAt: Date }) => {
+    const times = finalizedEncounters.map((e) => {
       const createdAt = e.createdAt.getTime();
       const finalizedAt = e.finalizedAt.getTime();
       return (finalizedAt - createdAt) / (1000 * 60); // minutes
