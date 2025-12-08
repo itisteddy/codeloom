@@ -24,16 +24,28 @@ This guide covers deploying Codeloom to production using:
 
 ### 2. Run Migrations
 
+Migrations should be run automatically via the Pre-Deploy Command in Render (see Backend Deployment section below).
+
+To run migrations manually:
+
+**Option 1: Via Render Shell (Recommended)**
+1. Go to Render Dashboard → Your Service → Shell
+2. Run: `cd backend && pnpm migrate:deploy`
+
+**Option 2: Via One-Time Job**
+1. Go to Render Dashboard → New → One-Time Job
+2. Set Root Directory: `backend`
+3. Set Command: `pnpm migrate:deploy`
+4. Run the job
+
+**Option 3: Local (if DATABASE_URL is set)**
 ```bash
 # Set DATABASE_URL to your Supabase connection string
 export DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
 
 # Run migrations
 cd backend
-pnpm prisma migrate deploy
-
-# Generate Prisma client
-pnpm prisma generate
+pnpm migrate:deploy
 ```
 
 ## Backend Deployment (Render)
@@ -47,6 +59,7 @@ pnpm prisma generate
    - **Root Directory**: `backend`
    - **Environment**: `Node`
    - **Build Command**: `pnpm install && pnpm build`
+   - **Pre-Deploy Command**: `pnpm migrate:deploy` (runs migrations before each deploy)
    - **Start Command**: `pnpm start`
 
 ### 2. Environment Variables
