@@ -57,8 +57,10 @@ If you need to run migrations manually, you can temporarily update the start com
 Add these in Render Dashboard → Environment:
 
 ```bash
-# Database
-DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
+# Database - Use Session Pooler URL (required for Render/Supabase)
+# Format: postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-us-east-2.pooler.supabase.com:5432/postgres
+# Get this from Supabase Dashboard → Settings → Database → Connection string → URI (Session mode)
+DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-us-east-2.pooler.supabase.com:5432/postgres
 
 # Auth
 JWT_SECRET=[generate-random-secret]
@@ -206,9 +208,12 @@ POST https://your-backend.onrender.com/api/admin/onboarding/practice
 
 ### Database connection issues
 
-- Verify Supabase connection string
-- Check IP allowlist in Supabase (if enabled)
+- **Use Session Pooler URL**: Render requires the Session Pooler URL, not the direct connection
+  - Format: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-us-east-2.pooler.supabase.com:5432/postgres`
+  - Get from: Supabase Dashboard → Settings → Database → Connection string → URI (Session mode)
+- Check IP allowlist in Supabase (if enabled) - usually not needed with pooler
 - Verify connection pooling settings
+- Direct connection URLs (`db.*.supabase.co`) may not work from Render - use pooler instead
 
 ## Security Checklist
 
