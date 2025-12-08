@@ -1,0 +1,302 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  provider
+  biller
+  admin
+}
+
+enum EncounterStatus {
+  draft
+  ai_suggested
+  finalized
+  exported
+}
+
+enum DenialRiskLevel {
+  low
+  medium
+  high
+}
+
+enum ConfidenceBucket {
+  low
+  medium
+  high
+}
+
+enum DecisionDelta {
+  accepted_as_is
+  lower_than_ai
+  higher_than_ai
+  different_code
+}
+
+enum TrainingDifficulty {
+  easy
+  medium
+  hard
+}
+
+enum AuditAction {
+  AI_SUGGESTED_CODES
+  AI_SAFETY
+  AI_FEEDBACK
+  USER_CHANGED_EM_CODE
+  USER_ADDED_DIAGNOSIS
+  USER_REMOVED_DIAGNOSIS
+  USER_CHANGED_PROCEDURE
+  USER_FINALIZED_CODES
+  ENCOUNTER_CREATED
+  ENCOUNTER_UPDATED
+}
+
+model Practice {
+  id           String        @id @default(uuid())
+  name         String
+  planKey      String        @default("plan_a")
+  planSince    DateTime      @default(now())
+  users        User[]
+  encounters   Encounter[]
+  auditEvents  AuditEvent[]
+  usagePeriods UsagePeriod[]
+  configuration PracticeConfiguration?
+  userInvites  UserInvite[]
+  npsResponses PracticeNpsResponse[]
+  // Pilot configuration fields
+  pilotLabel             String?
+  pilotStartDate         DateTime?
+  pilotEndDate           DateTime?
+  enabledSpecialtiesJson Json?
+  llmModeOverride        String?  // 'mock' | 'openai' | null
+  providerCanFinalize    Boolean  @default(true)
+  pilotBaselineJson      Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  practice            Practice            @relation(fields: [practiceId], references: [id])
+  practiceId          String
+  email               String
+  passwordHash        String
+  role                UserRole
+  firstName           String
+  lastName            String
+  encounters          Encounter[]         @relation("EncounterProvider")
+  finalizedEncounters Encounter[]         @relation("EncounterFinalizer")
+  trainingAttempts    TrainingAttempt[]
+  auditEvents         AuditEvent[]
+  encounterFeedback   EncounterFeedback[]
+  npsResponses        PracticeNpsResponse[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@unique([practiceId, email])
+}
+
+model Encounter {
+  id        String   @id @default(uuid())
+  practice  Practice @relation(fields: [practiceId], references: [id])
+  practiceId String
+
+  provider   User    @relation("EncounterProvider", fields: [providerId], references: [id])
+  providerId String
+
+  finalizedByUser   User?   @relation("EncounterFinalizer", fields: [finalizedByUserId], references: [id])
+  finalizedByUserId  String?
+
+  patientPseudoId String
+  encounterDate   DateTime
+  visitType       String
+  specialty       String
+
+  noteText String
+
+  status EncounterStatus @default(draft)
+
+  // AI suggestion fields
+  aiEmSuggested            String?
+  aiEmAlternativesJson     Json?   // store alternatives as JSON
+  aiEmConfidence           Float?
+  aiDiagnosisSuggestionsJson Json?
+  aiProcedureSuggestionsJson Json?
+  aiConfidenceBucket       ConfidenceBucket?
+
+  // Final codes
+  finalEmCode        String?
+  finalEmCodeSource  String? // "ai" | "provider" | "biller" | "mixed"
+  finalDiagnosisJson Json?   // list of { code, description, source }
+  finalProceduresJson Json?  // list of { code, description, modifiers, source }
+
+  // Risk & hints
+  denialRiskLevel    DenialRiskLevel?
+  denialRiskReasons  Json? // array of strings
+  hadUndercodeHint   Boolean @default(false)
+  hadMissedServiceHint Boolean @default(false)
+  emDecisionDelta    DecisionDelta?
+
+  feedbacks EncounterFeedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  finalizedAt DateTime?
+
+  auditEvents AuditEvent[]
+
+  @@index([practiceId, encounterDate])
+  @@index([providerId, encounterDate])
+  @@index([status])
+}
+
+model AuditEvent {
+  id          String      @id @default(uuid())
+  practice    Practice    @relation(fields: [practiceId], references: [id])
+  practiceId  String
+  encounter   Encounter   @relation(fields: [encounterId], references: [id])
+  encounterId String
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  userRole    UserRole
+  action      AuditAction
+  payload     Json
+  createdAt   DateTime @default(now())
+
+  @@index([practiceId, encounterId])
+  @@index([userId, createdAt])
+}
+
+model TrainingCase {
+  id                     String             @id @default(uuid())
+  title                  String
+  specialty              String
+  difficulty             TrainingDifficulty
+  noteText               String
+  correctEmCode          String
+  correctDiagnosisCodes  Json   // array of strings
+  correctProcedureCodes  Json   // array of strings
+  attempts               TrainingAttempt[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model TrainingAttempt {
+  id                 String         @id @default(uuid())
+  user               User           @relation(fields: [userId], references: [id])
+  userId             String
+  trainingCase       TrainingCase   @relation(fields: [trainingCaseId], references: [id])
+  trainingCaseId     String
+
+  userEmCode         String
+  userDiagnosisCodes Json   // array of strings
+  userProcedureCodes Json   // array of strings
+
+  aiEmCode           String
+  aiDiagnosisCodes   Json   // array of strings
+  aiProcedureCodes   Json   // array of strings
+
+  scorePercent       Float
+  matchSummary       Json   // { emMatch, diagnosisMatches, ... }
+
+  createdAt          DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([trainingCaseId])
+}
+
+model LlmEvaluationRun {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  modelId         String
+  caseCount       Int
+  emExactRate     Float
+  emNearRate      Float
+  dxRecall        Float
+  procRecall      Float
+  avgScorePercent Float
+  detailsJson     Json
+
+  @@index([createdAt])
+  @@index([modelId])
+}
+
+model UsagePeriod {
+  id                String   @id @default(cuid())
+  practice          Practice @relation(fields: [practiceId], references: [id])
+  practiceId        String
+  periodStart       DateTime
+  periodEnd         DateTime
+  encountersCreated Int      @default(0)
+  aiSuggestCalls    Int      @default(0)
+  trainingAttempts  Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([practiceId, periodStart, periodEnd])
+}
+
+model PracticeConfiguration {
+  id                String   @id @default(cuid())
+  practice          Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  practiceId        String   @unique
+  llmMode           String   @default("mock") // "mock" | "openai" | "anthropic"
+  enabledSpecialties Json    @default("[]") // array of specialty strings
+  providerCanEditCodes Boolean @default(false) // if true, providers can edit final codes
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model EncounterFeedback {
+  id          String    @id @default(cuid())
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  encounterId String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  helpful     Boolean
+  comment     String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([encounterId, userId])
+  @@index([encounterId])
+  @@index([userId, createdAt])
+}
+
+model UserInvite {
+  id          String   @id @default(cuid())
+  practice    Practice @relation(fields: [practiceId], references: [id])
+  practiceId  String
+  email       String
+  role        UserRole
+  token       String   @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([practiceId])
+  @@index([token])
+}
+
+model PracticeNpsResponse {
+  id          String   @id @default(cuid())
+  practice    Practice @relation(fields: [practiceId], references: [id])
+  practiceId  String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  score       Int      // 0–10
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@index([practiceId, createdAt])
+  @@index([userId])
+}
+
