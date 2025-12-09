@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { Logo } from '../ui/Logo';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -67,8 +68,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           )}
         >
           <div className="flex h-16 items-center px-4 border-b border-slate-200">
-            <Link to="/encounters" className="text-lg font-semibold text-slate-900">
-              Codeloom
+            <Link to="/encounters" className="flex items-center">
+              <Logo showText size="md" />
             </Link>
           </div>
           <div className="px-3 py-4 space-y-1">{navItems.map(renderNav)}</div>

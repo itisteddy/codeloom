@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { Logo } from '../components/ui/Logo';
 
 export const LoginPage: React.FC = () => {
   const { user, login, isLoading, error } = useAuth();
@@ -28,7 +29,7 @@ export const LoginPage: React.FC = () => {
         {/* Left brand column */}
         <div className="hidden lg:flex flex-col justify-center gap-6 bg-slate-900 px-12 text-slate-100">
           <div>
-            <div className="text-2xl font-semibold">Codeloom</div>
+            <Logo showText size="lg" variant="light" />
             <p className="mt-2 text-sm text-slate-300">
               AI-assisted medical coding for small practices.
             </p>

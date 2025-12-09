@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="3" fill="none"/>
+  
+  <!-- Central vertical band with diamond accent -->
+  <path d="M 32 8 Q 28 20, 32 32 Q 36 44, 32 56" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 28 20 L 32 16 L 36 20 L 32 24 Z" fill="currentColor"/>
+  
+  <!-- Left looping band -->
+  <path d="M 8 32 Q 16 24, 24 28 Q 32 32, 40 28 Q 48 24, 56 32" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Right looping band -->
+  <path d="M 56 32 Q 48 40, 40 36 Q 32 32, 24 36 Q 16 40, 8 32" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Additional interweaving bands for knot effect -->
+  <path d="M 20 16 Q 24 20, 28 18 Q 32 16, 36 18 Q 40 20, 44 16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 20 48 Q 24 44, 28 46 Q 32 48, 36 46 Q 40 44, 44 48" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>
+
