@@ -1,5 +1,9 @@
 import React from 'react';
 import { EncounterDto } from '../../api/encounters';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
+import { Spinner } from '../ui/Spinner';
 
 interface Props {
   encounter: EncounterDto;
@@ -14,182 +18,247 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
   onRunCodeloom,
   error,
 }) => {
-  const hasSuggestions = encounter.aiEmSuggested !== null && encounter.aiEmSuggested !== undefined;
+  const emRecommended = encounter.aiEmSuggested
+    ? { code: encounter.aiEmSuggested, confidence: encounter.aiEmConfidence }
+    : null;
+  const emHighestSupported = encounter.aiEmHighestSupportedCode
+    ? {
+        code: encounter.aiEmHighestSupportedCode,
+        confidence: encounter.aiEmHighestSupportedConfidence,
+      }
+    : null;
+
+  const hasSuggestions =
+    !!emRecommended ||
+    (encounter.aiDiagnosisSuggestions && encounter.aiDiagnosisSuggestions.length > 0) ||
+    (encounter.aiProcedureSuggestions && encounter.aiProcedureSuggestions.length > 0);
+
+  const formatConfidence = (conf?: number | null) =>
+    conf === null || conf === undefined ? null : `${Math.round(conf * 100)}% confidence`;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Codeloom Suggestions</h2>
-        <button
-          onClick={onRunCodeloom}
-          disabled={isRunning}
-          className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
-        >
-          {isRunning ? 'Running Codeloom...' : 'Run Codeloom'}
-        </button>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-          {error}
+    <Card>
+      <CardHeader className="border-b border-semantic-border">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <CardTitle>Codeloom Suggestions</CardTitle>
+            {encounter.aiModelId && (
+              <CardDescription className="text-xs">
+                Model: <span className="font-mono">{encounter.aiModelId}</span>
+              </CardDescription>
+            )}
+          </div>
+          <Button size="sm" onClick={onRunCodeloom} disabled={isRunning}>
+            {isRunning ? 'Running…' : 'Run Codeloom'}
+          </Button>
         </div>
-      )}
+        {error && (
+          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            We couldn't fetch suggestions right now. Your note is safe — please try again in a moment.
+          </div>
+        )}
+      </CardHeader>
 
-      {/* Model & Safety Info */}
-      {hasSuggestions && (
-        <div className="space-y-2 text-sm">
-          {encounter.aiModelId && (
-            <div className="text-slate-600">
-              Model: <span className="font-mono">{encounter.aiModelId}</span>
-            </div>
-          )}
-          {encounter.aiSafetySummary &&
-            (encounter.aiSafetySummary.hadInvalidCodes ||
-              encounter.aiSafetySummary.filteredCodesCount > 0 ||
-              encounter.aiSafetySummary.hadFormatIssues) && (
-              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-xs">
-                ⚠ Some suggestions were filtered by safety checks. Review carefully.
+      <CardContent className="space-y-6">
+        {isRunning && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Spinner />
+            <p className="mt-3 text-sm text-semantic-muted">Running Codeloom on this note…</p>
+          </div>
+        )}
+
+        {!hasSuggestions && encounter.status === 'draft' && !isRunning && (
+          <div className="rounded-md border border-semantic-border bg-slate-50 px-4 py-3 text-sm text-semantic-muted">
+            No suggestions yet. Paste your note and click Run Codeloom.
+          </div>
+        )}
+
+        {hasSuggestions && !isRunning && (
+          <div className="space-y-4">
+            {/* Safety Info */}
+            {encounter.aiSafetySummary &&
+              (encounter.aiSafetySummary.hadInvalidCodes ||
+                encounter.aiSafetySummary.filteredCodesCount > 0 ||
+                encounter.aiSafetySummary.hadFormatIssues) && (
+                <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  ⚠ Some suggestions were filtered by safety checks. Review carefully.
+                </div>
+              )}
+            {encounter.aiConfidenceBucket && (
+              <div
+                className={`text-xs ${
+                  encounter.aiConfidenceBucket === 'low'
+                    ? 'text-red-600'
+                    : encounter.aiConfidenceBucket === 'medium'
+                    ? 'text-semantic-warning'
+                    : 'text-semantic-success'
+                }`}
+              >
+                {encounter.aiConfidenceBucket === 'low' && '⚠ Low confidence – double-check carefully.'}
+                {encounter.aiConfidenceBucket === 'medium' && '⚠ Medium confidence – review recommended.'}
+                {encounter.aiConfidenceBucket === 'high' && '✓ High confidence – still review before finalizing.'}
               </div>
             )}
-          {encounter.aiConfidenceBucket && (
-            <div
-              className={`text-xs ${
-                encounter.aiConfidenceBucket === 'low'
-                  ? 'text-red-600'
-                  : encounter.aiConfidenceBucket === 'medium'
-                  ? 'text-yellow-600'
-                  : 'text-green-600'
-              }`}
-            >
-              {encounter.aiConfidenceBucket === 'low' && '⚠ Low confidence – double-check carefully.'}
-              {encounter.aiConfidenceBucket === 'medium' && '⚠ Medium confidence – review recommended.'}
-              {encounter.aiConfidenceBucket === 'high' && '✓ High confidence – still review before finalizing.'}
-            </div>
-          )}
-        </div>
-      )}
 
-      {!hasSuggestions && encounter.status === 'draft' && (
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded text-sm text-slate-600">
-          No suggestions yet. Paste your note and click Run Codeloom.
-        </div>
-      )}
-
-      {hasSuggestions && (
-        <div className="space-y-4">
-          {/* E/M Card */}
-          {encounter.aiEmSuggested && (
-            <div className="border border-slate-200 rounded p-4">
-              <h3 className="font-medium mb-2">E/M Code</h3>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-lg font-semibold">{encounter.aiEmSuggested}</span>
-                  {encounter.aiEmConfidence !== null && encounter.aiEmConfidence !== undefined && (
-                    <span className="ml-2 text-sm text-slate-600">
-                      ({Math.round(encounter.aiEmConfidence * 100)}% confidence)
-                    </span>
-                  )}
-                </div>
-                {encounter.aiEmAlternatives && encounter.aiEmAlternatives.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {encounter.aiEmAlternatives.map((alt) => (
-                      <span
-                        key={alt.code}
-                        className={`px-2 py-1 rounded text-xs ${
-                          alt.recommended
-                            ? 'bg-slate-900 text-white'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {alt.code} - {alt.label}
-                      </span>
-                    ))}
+            {/* E/M Section */}
+            <div className="space-y-3 rounded-lg border border-semantic-border bg-white px-4 py-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-semantic-muted mb-2">E/M CODE</p>
+                {emRecommended ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="text-2xl font-semibold text-brand-ink">{emRecommended.code}</p>
+                      {formatConfidence(emRecommended.confidence) && (
+                        <span className="text-xs text-semantic-muted">
+                          ({formatConfidence(emRecommended.confidence)})
+                        </span>
+                      )}
+                    </div>
+                    {emHighestSupported &&
+                      emHighestSupported.code !== emRecommended.code && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <Badge variant="info" className="bg-brand-tealSoft text-brand-teal">
+                            Highest supported
+                          </Badge>
+                          <span className="font-medium text-brand-ink">{emHighestSupported.code}</span>
+                          {formatConfidence(emHighestSupported.confidence) && (
+                            <span className="text-semantic-muted">
+                              ({formatConfidence(emHighestSupported.confidence)})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    {encounter.aiEmAlternatives && encounter.aiEmAlternatives.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {encounter.aiEmAlternatives.map((alt) => (
+                          <Badge key={alt.code} variant={alt.recommended ? 'primary' : 'secondary'}>
+                            {alt.code} · {alt.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <p className="text-sm text-semantic-muted">No E/M recommendation available.</p>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Diagnoses Card */}
-          {encounter.aiDiagnosisSuggestions && encounter.aiDiagnosisSuggestions.length > 0 && (
-            <div className="border border-slate-200 rounded p-4">
-              <h3 className="font-medium mb-2">Diagnoses</h3>
-              <div className="space-y-2">
-                {encounter.aiDiagnosisSuggestions.map((diag, idx) => (
-                  <div key={idx} className="text-sm">
-                    <div className="font-medium">
-                      {diag.code} - {diag.description}
-                    </div>
-                    <div className="text-slate-600">
-                      Confidence: {Math.round(diag.confidence * 100)}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            {/* Diagnoses */}
+            <section className="space-y-2">
+              <p className="text-xs font-medium uppercase text-slate-500">Diagnosis suggestions</p>
+              {encounter.aiDiagnosisSuggestions && encounter.aiDiagnosisSuggestions.length > 0 ? (
+                <ul className="space-y-1">
+                  {encounter.aiDiagnosisSuggestions.map((diag, idx) => (
+                    <li
+                      key={`${diag.code}-${idx}`}
+                      className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{diag.code}</p>
+                        {diag.description && (
+                          <p className="text-xs text-slate-500">{diag.description}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        {Math.round(diag.confidence * 100)}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">No diagnosis suggestions.</p>
+              )}
+            </section>
 
-          {/* Procedures Card */}
-          {encounter.aiProcedureSuggestions && encounter.aiProcedureSuggestions.length > 0 && (
-            <div className="border border-slate-200 rounded p-4">
-              <h3 className="font-medium mb-2">Procedures</h3>
-              <div className="space-y-2">
-                {encounter.aiProcedureSuggestions.map((proc, idx) => (
-                  <div key={idx} className="text-sm">
-                    <div className="font-medium">
-                      {proc.code} - {proc.description}
-                    </div>
-                    <div className="text-slate-600">
-                      Confidence: {Math.round(proc.confidence * 100)}%
-                      {proc.withinCuratedSet ? (
-                        <span className="ml-2 text-green-600">✓ Curated</span>
-                      ) : (
-                        <span className="ml-2 text-orange-600">⚠ Manual review</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            {/* Procedures */}
+            <section className="space-y-2">
+              <p className="text-xs font-medium uppercase text-slate-500">Procedure suggestions</p>
+              {encounter.aiProcedureSuggestions && encounter.aiProcedureSuggestions.length > 0 ? (
+                <ul className="space-y-1">
+                  {encounter.aiProcedureSuggestions.map((proc, idx) => (
+                    <li
+                      key={`${proc.code}-${idx}`}
+                      className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{proc.code}</p>
+                        {proc.description && (
+                          <p className="text-xs text-slate-500">{proc.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <span>{Math.round(proc.confidence * 100)}%</span>
+                        <span
+                          className={
+                            proc.withinCuratedSet ? 'text-emerald-600' : 'text-orange-600'
+                          }
+                        >
+                          {proc.withinCuratedSet ? '✓ Curated' : 'Manual review'}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">No procedure suggestions.</p>
+              )}
+            </section>
 
-          {/* Denial Risk Card */}
-          <div className="border border-slate-200 rounded p-4">
-            <h3 className="font-medium mb-2">Denial Risk & Hints</h3>
-            <div className="space-y-2">
+            {/* Denial Risk */}
+            <div className="space-y-3 rounded-lg border border-semantic-border bg-white px-4 py-3">
+              <h3 className="text-sm font-semibold text-brand-ink">Denial Risk & Hints</h3>
               {encounter.denialRiskLevel && (
                 <div>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
+                  <Badge
+                    variant={
                       encounter.denialRiskLevel === 'low'
-                        ? 'bg-green-100 text-green-800'
+                        ? 'success'
                         : encounter.denialRiskLevel === 'medium'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
+                        ? 'warning'
+                        : 'destructive'
+                    }
                   >
-                    {encounter.denialRiskLevel.toUpperCase()} Risk
-                  </span>
+                    {encounter.denialRiskLevel.toUpperCase()} RISK
+                  </Badge>
                 </div>
               )}
               {encounter.denialRiskReasons && encounter.denialRiskReasons.length > 0 && (
-                <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <ul className="space-y-1.5 divide-y divide-slate-100">
                   {encounter.denialRiskReasons.map((reason, idx) => (
-                    <li key={idx}>{reason}</li>
+                    <li key={idx} className="pt-1.5 first:pt-0 text-sm text-semantic-muted">
+                      • {reason}
+                    </li>
                   ))}
                 </ul>
               )}
               {encounter.hadUndercodeHint && (
-                <div className="text-sm text-orange-600">⚠ Undercoding hint detected</div>
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="text-semantic-warning">⚠</span>
+                  <div>
+                    <span className="font-semibold text-semantic-warning">Undercoding hint detected</span>
+                    <p className="text-xs text-semantic-muted mt-0.5">
+                      Documentation may support a higher level code. Review before finalizing.
+                    </p>
+                  </div>
+                </div>
               )}
               {encounter.hadMissedServiceHint && (
-                <div className="text-sm text-blue-600">ℹ Missed service hint detected</div>
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="text-blue-600">ℹ</span>
+                  <div>
+                    <span className="font-semibold text-blue-600">Missed service hint detected</span>
+                    <p className="text-xs text-semantic-muted mt-0.5">
+                      Additional services may be billable. Review documentation.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

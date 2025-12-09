@@ -41,6 +41,12 @@ function toEncounterDto(encounter: any, safetySummary?: any, modelId?: string) {
   if (encounter.aiEmAlternativesJson) {
     dto.aiEmAlternatives = encounter.aiEmAlternativesJson;
   }
+  if (encounter.aiEmHighestSupportedCode) {
+    dto.aiEmHighestSupportedCode = encounter.aiEmHighestSupportedCode;
+  }
+  if (encounter.aiEmHighestSupportedConfidence !== null && encounter.aiEmHighestSupportedConfidence !== undefined) {
+    dto.aiEmHighestSupportedConfidence = encounter.aiEmHighestSupportedConfidence;
+  }
   if (encounter.aiDiagnosisSuggestionsJson) {
     dto.aiDiagnosisSuggestions = encounter.aiDiagnosisSuggestionsJson;
   }

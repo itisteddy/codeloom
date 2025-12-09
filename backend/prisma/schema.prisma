@@ -129,6 +129,8 @@ model Encounter {
   aiEmSuggested            String?
   aiEmAlternativesJson     Json?   // store alternatives as JSON
   aiEmConfidence           Float?
+  aiEmHighestSupportedCode String?
+  aiEmHighestSupportedConfidence Float?
   aiDiagnosisSuggestionsJson Json?
   aiProcedureSuggestionsJson Json?
   aiConfidenceBucket       ConfidenceBucket?

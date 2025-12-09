@@ -138,7 +138,9 @@ export const EncounterDetailProviderPage: React.FC = () => {
             <CardHeader>
               <CardTitle>Encounter Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-semantic-muted">Visit Info</h3>
               {error && (
                 <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {error}
@@ -171,15 +173,16 @@ export const EncounterDetailProviderPage: React.FC = () => {
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
               />
-              <label className="block space-y-1.5">
-                <span className="text-sm font-medium text-slate-700">Note Text</span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-semantic-muted">Note Text</h3>
                 <textarea
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   rows={12}
-                  className="thin-scrollbar w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-mono shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  className="thin-scrollbar w-full rounded-xl border border-semantic-border bg-slate-50 px-3 py-3 text-sm font-mono leading-relaxed text-brand-ink min-h-[240px] focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-tealSoft"
                 />
-              </label>
+              </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Button onClick={handleSave} loading={isSaving} variant="secondary">
                   Save
@@ -187,12 +190,7 @@ export const EncounterDetailProviderPage: React.FC = () => {
                 <div className="text-xs text-slate-500">
                   Last updated: {formatDate(encounter.updatedAt)}
                 </div>
-                <div className="flex items-center gap-2">
-                  {suggestError && <span className="text-sm text-red-600">{suggestError}</span>}
-                  <Button onClick={handleRunCodeloom} loading={isRunningSuggest}>
-                    Run Codeloom
-                  </Button>
-                </div>
+                {suggestError && <span className="text-sm text-red-600">{suggestError}</span>}
               </div>
             </CardContent>
           </Card>

@@ -17,6 +17,8 @@ export interface EmAlternative {
   code: string;
   label: string; // e.g. "lower complexity", "recommended"
   recommended: boolean;
+  confidence?: number | null;
+  level?: number | null;
 }
 
 export type ConfidenceBucket = 'low' | 'medium' | 'high';

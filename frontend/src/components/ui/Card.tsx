@@ -7,7 +7,7 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 }) => (
   <div
     className={cn(
-      'bg-white border border-slate-200 rounded-2xl shadow-sm',
+      'bg-white border border-semantic-border rounded-2xl shadow-sm',
       className
     )}
     {...props}
@@ -22,12 +22,12 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   className,
   ...props
-}) => <h3 className={cn('text-lg font-semibold text-slate-900', className)} {...props} />;
+}) => <h3 className={cn('text-lg font-semibold text-brand-ink', className)} {...props} />;
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
   className,
   ...props
-}) => <p className={cn('text-sm text-slate-600', className)} {...props} />;
+}) => <p className={cn('text-sm text-semantic-muted', className)} {...props} />;
 
 export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,

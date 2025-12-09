@@ -13,11 +13,68 @@ import { SafetySummary } from '../llm/safetyValidators';
 
 const MAX_NOTE_CHARS = 10000;
 
+type EmCandidate = {
+  code: string;
+  level: number | null;
+  confidence: number;
+};
+
 function toConfidenceBucket(conf: number | null): ConfidenceBucket | null {
   if (conf == null) return null;
   if (conf >= 0.8) return 'high';
   if (conf >= 0.5) return 'medium';
   return 'low';
+}
+
+function inferEmLevel(code: string | null): number | null {
+  if (!code) return null;
+  const match = code.match(/(\d)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function selectEmCodes(result: EncounterSuggestionsResult) {
+  const candidates: EmCandidate[] = [];
+  const baseConfidence = typeof result.emConfidence === 'number' ? result.emConfidence : 0;
+
+  if (result.emSuggested) {
+    candidates.push({
+      code: result.emSuggested,
+      level: inferEmLevel(result.emSuggested),
+      confidence: baseConfidence || 0.65,
+    });
+  }
+
+  if (result.emAlternatives && result.emAlternatives.length > 0) {
+    for (const alt of result.emAlternatives) {
+      const altConfidence =
+        typeof (alt as any).confidence === 'number'
+          ? (alt as any).confidence
+          : Math.max(baseConfidence, alt.recommended ? 0.7 : 0.6);
+      candidates.push({
+        code: alt.code,
+        level: inferEmLevel(alt.code),
+        confidence: altConfidence,
+      });
+    }
+  }
+
+  const supported = candidates.filter((c) => c.level !== null && c.confidence >= 0.6);
+  const recommended =
+    (result.emSuggested &&
+      candidates.find((c) => c.code === result.emSuggested && c.level !== null)) ||
+    (supported.length > 0
+      ? supported.reduce((best, c) => (c.confidence > best.confidence ? c : best), supported[0])
+      : null);
+
+  const highestSupported =
+    supported.length > 0
+      ? supported.reduce((best, c) => ((c.level || 0) > (best.level || 0) ? c : best), supported[0])
+      : null;
+
+  const hasUndercodeDelta =
+    recommended && highestSupported && (highestSupported.level || 0) > (recommended.level || 0);
+
+  return { recommended, highestSupported, hasUndercodeDelta };
 }
 
 export interface SuggestionResult {
@@ -73,31 +130,36 @@ export async function runSuggestionsForEncounter(params: {
   const safetySummary = rawResult.__safetySummary || null;
   const result: EncounterSuggestionsResult = {
     emSuggested: rawResult.emSuggested,
-    emAlternatives: rawResult.emAlternatives,
+    emAlternatives: rawResult.emAlternatives || [],
     emConfidence: rawResult.emConfidence,
-    diagnoses: rawResult.diagnoses,
-    procedures: rawResult.procedures,
+    diagnoses: rawResult.diagnoses || [],
+    procedures: rawResult.procedures || [],
     confidenceBucket: rawResult.confidenceBucket,
     denialRiskLevel: rawResult.denialRiskLevel,
-    denialRiskReasons: rawResult.denialRiskReasons,
+    denialRiskReasons: rawResult.denialRiskReasons || [],
     hadUndercodeHint: rawResult.hadUndercodeHint,
     hadMissedServiceHint: rawResult.hadMissedServiceHint,
   };
 
-  const confidenceBucket = result.confidenceBucket ?? toConfidenceBucket(result.emConfidence);
+  const { recommended, highestSupported, hasUndercodeDelta } = selectEmCodes(result);
+
+  const confidenceBucket = result.confidenceBucket ?? toConfidenceBucket(recommended?.confidence ?? null);
+  const hadUndercodeHint = Boolean(result.hadUndercodeHint || hasUndercodeDelta);
 
   const updated = await prisma.encounter.update({
     where: { id: encounter.id },
     data: {
-      aiEmSuggested: result.emSuggested ?? undefined,
+      aiEmSuggested: recommended?.code ?? result.emSuggested ?? undefined,
       aiEmAlternativesJson: result.emAlternatives as any,
-      aiEmConfidence: result.emConfidence ?? undefined,
+      aiEmConfidence: recommended?.confidence ?? result.emConfidence ?? undefined,
+      aiEmHighestSupportedCode: highestSupported?.code ?? undefined,
+      aiEmHighestSupportedConfidence: highestSupported?.confidence ?? undefined,
       aiDiagnosisSuggestionsJson: result.diagnoses as any,
       aiProcedureSuggestionsJson: result.procedures as any,
       aiConfidenceBucket: confidenceBucket ?? undefined,
       denialRiskLevel: (result.denialRiskLevel as DenialRiskLevel | null) ?? undefined,
       denialRiskReasons: result.denialRiskReasons as any,
-      hadUndercodeHint: result.hadUndercodeHint,
+      hadUndercodeHint,
       hadMissedServiceHint: result.hadMissedServiceHint,
       status: EncounterStatus.ai_suggested,
     },

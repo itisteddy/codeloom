@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Badge } from '../components/ui/Badge';
 import {
   getEncounter,
   updateEncounterCodes,
@@ -205,6 +209,39 @@ export const EncounterDetailBillerPage: React.FC = () => {
     setProcedureCodes(updated);
   };
 
+  const addDiagnosisFromSuggestion = (diag: { code: string; description: string }) => {
+    const exists = diagnosisCodes.some(
+      (d) => d.code === diag.code && d.description === diag.description
+    );
+    if (!exists) {
+      setDiagnosisCodes([
+        ...diagnosisCodes,
+        { code: diag.code, description: diag.description, source: 'ai' },
+      ]);
+    }
+  };
+
+  const addProcedureFromSuggestion = (proc: {
+    code: string;
+    description: string;
+    modifiers?: string[];
+  }) => {
+    const exists = procedureCodes.some(
+      (p) => p.code === proc.code && p.description === proc.description
+    );
+    if (!exists) {
+      setProcedureCodes([
+        ...procedureCodes,
+        {
+          code: proc.code,
+          description: proc.description,
+          modifiers: proc.modifiers || [],
+          source: 'ai',
+        },
+      ]);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-4">
@@ -274,164 +311,257 @@ export const EncounterDetailBillerPage: React.FC = () => {
         <div className="lg:col-span-2">
           <div className="space-y-6">
             {/* E/M Code Section */}
-            <div className="border border-slate-200 rounded p-4">
-              <h2 className="font-medium mb-3">E/M Code</h2>
-              <input
-                type="text"
-                value={emCode}
-                onChange={(e) => setEmCode(e.target.value)}
-                placeholder="e.g., 99213"
-                className="border rounded px-3 py-2 w-full text-sm"
-              />
-              {encounter.aiEmSuggested && (
-                <p className="mt-2 text-xs text-slate-600">
-                  AI suggested: {encounter.aiEmSuggested}
-                  {encounter.aiEmConfidence !== null &&
-                    encounter.aiEmConfidence !== undefined &&
-                    ` (confidence ${Math.round(encounter.aiEmConfidence * 100)}%)`}
-                </p>
-              )}
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>E/M Code</CardTitle>
+                <CardDescription>Review AI guidance and set the final code</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Input
+                  label="Final E/M code"
+                  type="text"
+                  value={emCode}
+                  onChange={(e) => setEmCode(e.target.value)}
+                  placeholder="e.g., 99213"
+                />
+                {encounter.aiEmSuggested && (
+                  <div className="space-y-1 text-xs text-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Recommended:</span>
+                      <span className="font-mono text-sm">{encounter.aiEmSuggested}</span>
+                      {encounter.aiEmConfidence !== null &&
+                        encounter.aiEmConfidence !== undefined && (
+                          <span className="text-slate-500">
+                            ({Math.round(encounter.aiEmConfidence * 100)}% confidence)
+                          </span>
+                        )}
+                    </div>
+                    {encounter.aiEmHighestSupportedCode &&
+                      encounter.aiEmHighestSupportedCode !== encounter.aiEmSuggested && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="success">Highest supported</Badge>
+                          <span className="font-mono text-sm">
+                            {encounter.aiEmHighestSupportedCode}
+                          </span>
+                          {encounter.aiEmHighestSupportedConfidence !== null &&
+                            encounter.aiEmHighestSupportedConfidence !== undefined && (
+                              <span className="text-slate-500">
+                                ({Math.round(encounter.aiEmHighestSupportedConfidence * 100)}% confidence)
+                              </span>
+                            )}
+                        </div>
+                      )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Diagnoses Section */}
-            <div className="border border-slate-200 rounded p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-medium">Diagnoses</h2>
-                <button
-                  onClick={addDiagnosis}
-                  className="text-sm px-3 py-1 border rounded hover:bg-slate-50"
-                >
+            <Card>
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Final Diagnoses</CardTitle>
+                  <CardDescription>These will be submitted for this encounter.</CardDescription>
+                </div>
+                <Button size="sm" variant="ghost" onClick={addDiagnosis}>
                   + Add diagnosis
-                </button>
-              </div>
-              <div className="space-y-3">
-                {diagnosisCodes.map((diag, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <input
-                      type="text"
-                      value={diag.code}
-                      onChange={(e) => updateDiagnosis(idx, 'code', e.target.value)}
-                      placeholder="Code"
-                      className="border rounded px-2 py-1 text-sm w-24"
-                    />
-                    <input
-                      type="text"
-                      value={diag.description}
-                      onChange={(e) => updateDiagnosis(idx, 'description', e.target.value)}
-                      placeholder="Description"
-                      className="border rounded px-2 py-1 text-sm flex-1"
-                    />
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        diag.source === 'ai'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-slate-100 text-slate-800'
-                      }`}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  {diagnosisCodes.map((diag, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col gap-2 rounded border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-start"
                     >
-                      {diag.source.toUpperCase()}
-                    </span>
-                    <button
-                      onClick={() => removeDiagnosis(idx)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Remove
-                    </button>
+                      <Input
+                        label="Code"
+                        value={diag.code}
+                        onChange={(e) => updateDiagnosis(idx, 'code', e.target.value)}
+                        className="sm:w-32"
+                      />
+                      <Input
+                        label="Description"
+                        value={diag.description}
+                        onChange={(e) => updateDiagnosis(idx, 'description', e.target.value)}
+                        className="flex-1"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Badge variant={diag.source === 'ai' ? 'info' : 'secondary'}>
+                          {diag.source.toUpperCase()}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeDiagnosis(idx)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {diagnosisCodes.length === 0 && (
+                    <p className="text-sm text-slate-500">No diagnoses added yet.</p>
+                  )}
+                </div>
+
+                {encounter.aiDiagnosisSuggestions && encounter.aiDiagnosisSuggestions.length > 0 && (
+                  <div className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase text-slate-500">AI suggestions</p>
+                    </div>
+                    <div className="space-y-1">
+                      {encounter.aiDiagnosisSuggestions.map((diag, idx) => (
+                        <div
+                          key={`${diag.code}-${idx}`}
+                          className="flex items-center justify-between rounded border border-slate-100 bg-white px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{diag.code}</p>
+                            {diag.description && (
+                              <p className="text-xs text-slate-500">{diag.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-500">
+                              {Math.round(diag.confidence * 100)}%
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => addDiagnosisFromSuggestion(diag)}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-                {diagnosisCodes.length === 0 && (
-                  <p className="text-sm text-slate-500">No diagnoses added</p>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Procedures Section */}
-            <div className="border border-slate-200 rounded p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-medium">Procedures</h2>
-                <button
-                  onClick={addProcedure}
-                  className="text-sm px-3 py-1 border rounded hover:bg-slate-50"
-                >
+            <Card>
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Final Procedures</CardTitle>
+                  <CardDescription>Procedures to submit for this encounter.</CardDescription>
+                </div>
+                <Button size="sm" variant="ghost" onClick={addProcedure}>
                   + Add procedure
-                </button>
-              </div>
-              <div className="space-y-3">
-                {procedureCodes.map((proc, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <input
-                      type="text"
-                      value={proc.code}
-                      onChange={(e) => updateProcedure(idx, 'code', e.target.value)}
-                      placeholder="Code"
-                      className="border rounded px-2 py-1 text-sm w-24"
-                    />
-                    <input
-                      type="text"
-                      value={proc.description}
-                      onChange={(e) => updateProcedure(idx, 'description', e.target.value)}
-                      placeholder="Description"
-                      className="border rounded px-2 py-1 text-sm flex-1"
-                    />
-                    <input
-                      type="text"
-                      value={proc.modifiers?.join(',') || ''}
-                      onChange={(e) =>
-                        updateProcedure(
-                          idx,
-                          'modifiers',
-                          e.target.value.split(',').map((m) => m.trim()).filter(Boolean)
-                        )
-                      }
-                      placeholder="Modifiers (comma-separated)"
-                      className="border rounded px-2 py-1 text-sm w-32"
-                    />
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        proc.source === 'ai'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-slate-100 text-slate-800'
-                      }`}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  {procedureCodes.map((proc, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col gap-2 rounded border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-start"
                     >
-                      {proc.source.toUpperCase()}
-                    </span>
-                    <button
-                      onClick={() => removeProcedure(idx)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Remove
-                    </button>
+                      <Input
+                        label="Code"
+                        value={proc.code}
+                        onChange={(e) => updateProcedure(idx, 'code', e.target.value)}
+                        className="sm:w-32"
+                      />
+                      <Input
+                        label="Description"
+                        value={proc.description}
+                        onChange={(e) => updateProcedure(idx, 'description', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        label="Modifiers (comma-separated)"
+                        value={proc.modifiers?.join(',') || ''}
+                        onChange={(e) =>
+                          updateProcedure(
+                            idx,
+                            'modifiers',
+                            e.target.value
+                              .split(',')
+                              .map((m) => m.trim())
+                              .filter(Boolean)
+                          )
+                        }
+                        className="sm:w-48"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Badge variant={proc.source === 'ai' ? 'info' : 'secondary'}>
+                          {proc.source.toUpperCase()}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeProcedure(idx)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {procedureCodes.length === 0 && (
+                    <p className="text-sm text-slate-500">No procedures added yet.</p>
+                  )}
+                </div>
+
+                {encounter.aiProcedureSuggestions && encounter.aiProcedureSuggestions.length > 0 && (
+                  <div className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase text-slate-500">AI suggestions</p>
+                    </div>
+                    <div className="space-y-1">
+                      {encounter.aiProcedureSuggestions.map((proc, idx) => (
+                        <div
+                          key={`${proc.code}-${idx}`}
+                          className="flex items-center justify-between rounded border border-slate-100 bg-white px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{proc.code}</p>
+                            {proc.description && (
+                              <p className="text-xs text-slate-500">{proc.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-500">
+                              {Math.round(proc.confidence * 100)}%
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => addProcedureFromSuggestion(proc)}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-                {procedureCodes.length === 0 && (
-                  <p className="text-sm text-slate-500">No procedures added</p>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleSaveCodes}
-                disabled={isSavingCodes}
-                className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
-              >
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={handleSaveCodes} disabled={isSavingCodes}>
                 {isSavingCodes ? 'Saving...' : 'Save Codes'}
-              </button>
+              </Button>
               {(user?.role === 'biller' || user?.role === 'admin') && (
                 <>
-                  <button
+                  <Button
                     onClick={handleFinalize}
                     disabled={encounter.status === 'finalized' || isFinalizing}
-                    className="bg-green-700 text-white px-4 py-2 rounded text-sm hover:bg-green-800 disabled:opacity-60"
+                    variant="secondary"
                   >
                     {isFinalizing ? 'Finalizing...' : 'Finalize Encounter'}
-                  </button>
-                  <button
-                    onClick={handleOpenAudit}
-                    className="border border-slate-300 px-4 py-2 rounded text-sm hover:bg-slate-50"
-                  >
+                  </Button>
+                  <Button variant="ghost" onClick={handleOpenAudit}>
                     View Audit Trail
-                  </button>
+                  </Button>
                 </>
               )}
             </div>

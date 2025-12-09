@@ -36,15 +36,15 @@ export const EncountersListPage: React.FC = () => {
   };
 
   const renderEmpty = () => (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="mb-3 text-lg font-semibold text-slate-900">No encounters yet</div>
-      <p className="text-sm text-slate-600 max-w-md">
-        Create your first encounter to see AI coding suggestions here.
-      </p>
-      <div className="mt-4">
+    <Card className="border-dashed">
+      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+        <h3 className="text-lg font-semibold text-brand-ink mb-2">No encounters yet</h3>
+        <p className="text-sm text-semantic-muted max-w-md mb-4">
+          Create your first encounter to see Codeloom in action.
+        </p>
         <Button onClick={() => navigate('/encounters/new')}>New Encounter</Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   return (

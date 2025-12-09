@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getEncounterFeedback, submitEncounterFeedback, EncounterFeedback } from '../../api/feedback';
 import { useAuth } from '../../auth/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { cn } from '../../lib/utils';
 
 interface Props {
   encounterId: string;
@@ -91,30 +94,34 @@ export const EncounterFeedbackPanel: React.FC<Props> = ({ encounterId }) => {
   }
 
   return (
-    <div className="border border-slate-200 rounded p-4 mt-4">
-      <h3 className="font-medium mb-3">Was this suggestion helpful?</h3>
-      <div className="space-y-4">
-        {/* Yes/No Buttons */}
-        <div className="flex gap-3">
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle>Was this suggestion helpful?</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Segmented Control */}
+        <div className="inline-flex rounded-full border border-semantic-border bg-slate-50 p-0.5">
           <button
             type="button"
             onClick={() => setHelpful(true)}
-            className={`flex-1 px-4 py-2 rounded border ${
+            className={cn(
+              'px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150',
               helpful === true
-                ? 'bg-green-50 border-green-500 text-green-700'
-                : 'bg-white border-slate-300 hover:bg-slate-50'
-            }`}
+                ? 'bg-brand-teal text-white'
+                : 'bg-transparent text-semantic-muted hover:text-brand-ink'
+            )}
           >
             Yes
           </button>
           <button
             type="button"
             onClick={() => setHelpful(false)}
-            className={`flex-1 px-4 py-2 rounded border ${
+            className={cn(
+              'px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-150',
               helpful === false
-                ? 'bg-red-50 border-red-500 text-red-700'
-                : 'bg-white border-slate-300 hover:bg-slate-50'
-            }`}
+                ? 'bg-brand-teal text-white'
+                : 'bg-transparent text-semantic-muted hover:text-brand-ink'
+            )}
           >
             No
           </button>
@@ -122,30 +129,32 @@ export const EncounterFeedbackPanel: React.FC<Props> = ({ encounterId }) => {
 
         {/* Comments */}
         <div>
-          <label className="block text-sm font-medium mb-1">Any comment? (optional)</label>
+          <label className="block text-xs font-medium text-semantic-muted mb-1.5">
+            Any comment? (optional)
+          </label>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Any additional feedback..."
-            rows={3}
-            className="border rounded px-3 py-2 w-full text-sm"
+            rows={2}
+            className="w-full rounded-md border border-semantic-border bg-white px-3 py-2 text-sm text-brand-ink placeholder:text-semantic-muted focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-tealSoft"
           />
         </div>
 
         {error && (
-          <div className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
             {error}
           </div>
         )}
 
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={isSubmitting || helpful === null}
-          className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
+          size="sm"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 };

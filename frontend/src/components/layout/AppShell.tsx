@@ -45,10 +45,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         key={item.to}
         to={item.to}
         className={cn(
-          'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+          'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
           active
-            ? 'bg-primary-50 text-primary-800'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            ? 'bg-slate-100 text-brand-ink font-medium'
+            : 'text-semantic-muted hover:bg-slate-100'
         )}
         onClick={() => setSidebarOpen(false)}
       >
@@ -67,9 +67,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           )}
         >
-          <div className="flex h-16 items-center px-4 border-b border-slate-200">
-            <Link to="/encounters" className="flex items-center">
-              <Logo showText size="md" />
+          <div className="flex h-16 items-center gap-2 px-4 border-b border-semantic-border">
+            <Link to="/encounters" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Codeloom" className="h-6 w-6" />
+              <span className="text-lg font-medium text-brand-ink">Codeloom</span>
             </Link>
           </div>
           <div className="px-3 py-4 space-y-1">{navItems.map(renderNav)}</div>
@@ -80,27 +81,32 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
         {/* Main Content */}
         <div className="flex min-h-screen flex-1 flex-col lg:ml-64">
-          <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
+          <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-semantic-border">
             <div className="flex items-center justify-between px-4 py-3 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 lg:hidden"
+                  className="rounded-lg border border-semantic-border bg-white px-3 py-2 text-sm font-medium text-semantic-muted shadow-sm hover:bg-slate-50 transition-colors duration-150 lg:hidden"
                   onClick={() => setSidebarOpen((v) => !v)}
                 >
                   Menu
                 </button>
-                <div className="hidden lg:block text-sm text-slate-600">{practiceLabel}</div>
+                <div className="hidden lg:flex items-center gap-2">
+                  <span className="text-sm font-medium text-brand-ink">{practiceLabel}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {import.meta.env.VITE_APP_VERSION?.includes('dev') ? 'Dev' : 'Pilot'}
+                  </Badge>
+                </div>
               </div>
               {user && (
                 <div className="flex items-center gap-3">
-                  <Badge variant="info">{roleLabel}</Badge>
-                  <div className="flex flex-col text-right">
-                    <span className="text-sm font-medium text-slate-900">
+                  <Badge variant="default">{roleLabel}</Badge>
+                  <div className="hidden sm:flex flex-col text-right">
+                    <span className="text-sm font-medium text-brand-ink">
                       {user.firstName} {user.lastName}
                     </span>
-                    <span className="text-xs text-slate-500">{user.email}</span>
+                    <span className="text-xs text-semantic-muted">{user.email}</span>
                   </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-primary-800 font-semibold">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-tealSoft text-brand-teal font-semibold text-sm">
                     {user.firstName.charAt(0)}
                     {user.lastName.charAt(0)}
                   </div>

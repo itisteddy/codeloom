@@ -5,6 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        brand: {
+          ink: '#020617',
+          teal: '#0F766E',
+          tealSoft: '#CCF3EC',
+        },
+        semantic: {
+          border: '#E2E8F0',
+          muted: '#64748B',
+          warning: '#EA580C',
+          success: '#16A34A',
+        },
         primary: {
           50: '#eef2ff',
           100: '#e0e7ff',

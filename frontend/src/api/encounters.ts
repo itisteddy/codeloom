@@ -5,6 +5,8 @@ export interface EmAlternative {
   code: string;
   label: string;
   recommended: boolean;
+  confidence?: number | null;
+  level?: number | null;
 }
 
 export interface AiDiagnosisSuggestion {
@@ -40,6 +42,8 @@ export interface EncounterDto {
   status: EncounterStatus;
   aiEmSuggested?: string | null;
   aiEmConfidence?: number | null;
+  aiEmHighestSupportedCode?: string | null;
+  aiEmHighestSupportedConfidence?: number | null;
   aiEmAlternatives?: EmAlternative[] | null;
   aiDiagnosisSuggestions?: AiDiagnosisSuggestion[] | null;
   aiProcedureSuggestions?: AiProcedureSuggestion[] | null;

@@ -1,5 +1,5 @@
 import React from 'react';
-import logoIcon from '../../assets/logo.svg';
+import logoIcon from '../../assets/logo.png';
 
 interface LogoProps {
   className?: string;
@@ -20,16 +20,18 @@ export const Logo: React.FC<LogoProps> = ({
   size = 'md',
   variant = 'dark'
 }) => {
-  const textColor = variant === 'light' ? 'text-slate-100' : 'text-slate-900';
+  const textColor = variant === 'light' ? 'text-slate-100' : 'text-brand-ink';
   
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img 
         src={logoIcon} 
         alt="Codeloom" 
-        className={`${sizeClasses[size]} ${variant === 'light' ? 'invert' : ''}`}
+        className={`${sizeClasses[size]} ${
+          variant === 'light' ? 'drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]' : ''
+        }`}
       />
-      {showText && <span className={`text-lg font-semibold ${textColor}`}>Codeloom</span>}
+      {showText && <span className={`text-lg font-medium ${textColor}`}>Codeloom</span>}
     </div>
   );
 };
