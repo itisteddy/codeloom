@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
-import { Logo } from '../ui/Logo';
+import { IS_DEV, IS_PILOT, APP_VERSION } from '../../version';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -34,7 +34,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     []
   );
 
-  const practiceLabel = user?.practiceId ? `Practice ${user.practiceId.slice(0, 6)}` : 'Codeloom Practice';
+  // Show a user-friendly practice name (in a real app, this would come from the practice record)
+  const practiceLabel = 'Sample Family Practice';
   const roleLabel = user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : 'User';
 
   const renderNav = (item: NavItem) => {
@@ -74,9 +75,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </Link>
           </div>
           <div className="px-3 py-4 space-y-1">{navItems.map(renderNav)}</div>
-          <div className="px-4 py-4 mt-auto text-xs text-slate-500">
-            v{import.meta.env.VITE_APP_VERSION || 'dev'}
-          </div>
+          {IS_DEV && (
+            <div className="px-4 py-4 mt-auto text-xs text-semantic-muted">
+              v{APP_VERSION}
+            </div>
+          )}
         </aside>
 
         {/* Main Content */}
@@ -92,9 +95,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 </button>
                 <div className="hidden lg:flex items-center gap-2">
                   <span className="text-sm font-medium text-brand-ink">{practiceLabel}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {import.meta.env.VITE_APP_VERSION?.includes('dev') ? 'Dev' : 'Pilot'}
-                  </Badge>
+                  {IS_PILOT && (
+                    <Badge variant="info" className="text-xs">
+                      Pilot
+                    </Badge>
+                  )}
+                  {IS_DEV && (
+                    <Badge variant="outline" className="text-xs">
+                      Dev
+                    </Badge>
+                  )}
                 </div>
               </div>
               {user && (

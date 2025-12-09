@@ -83,7 +83,7 @@ export const TrainingCasePage: React.FC = () => {
     }
   };
 
-  const getDifficultyColor = (difficulty: TrainingDifficulty) => {
+  const getDifficultyColor = (difficulty: TrainingDifficulty): 'success' | 'warning' | 'danger' | 'default' => {
     switch (difficulty) {
       case 'easy':
         return 'success';
@@ -225,8 +225,11 @@ export const TrainingCasePage: React.FC = () => {
 
           {/* Results Card */}
           {attemptResult && (
-            <div className="border border-slate-200 rounded p-4">
-              <h2 className="font-medium mb-3">Results</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Results</CardTitle>
+              </CardHeader>
+              <CardContent>
               <div className="space-y-4">
                 {/* Score */}
                 <div className="text-center py-4 bg-slate-50 rounded">
@@ -327,7 +330,8 @@ export const TrainingCasePage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

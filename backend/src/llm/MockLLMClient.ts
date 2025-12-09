@@ -17,7 +17,7 @@ export class MockLLMClient implements LLMClient {
         code: 'E11.9',
         description: 'Type 2 diabetes mellitus without complications',
         confidence: 0.9,
-        noteSnippets: ['(mock) Mention of diabetes/metformin'],
+        noteSnippets: ['Mention of diabetes or metformin in note'],
       });
     }
     if (hasHypertension) {
@@ -25,7 +25,7 @@ export class MockLLMClient implements LLMClient {
         code: 'I10',
         description: 'Essential (primary) hypertension',
         confidence: 0.85,
-        noteSnippets: ['(mock) Mention of hypertension/BP'],
+        noteSnippets: ['Mention of hypertension or blood pressure in note'],
       });
     }
 
@@ -38,7 +38,7 @@ export class MockLLMClient implements LLMClient {
             code: 'J3420',
             description: 'Injection, vitamin B12 (cyanocobalamin), up to 1,000 mcg',
             confidence: 0.88,
-            noteSnippets: ['(mock) Mention of B12 injection'],
+            noteSnippets: ['B12 injection mentioned in note'],
             withinCuratedSet: true,
           },
         ]
@@ -55,7 +55,7 @@ export class MockLLMClient implements LLMClient {
       procedures,
       confidenceBucket: emConfidence >= 0.8 ? 'high' : emConfidence >= 0.5 ? 'medium' : 'low',
       denialRiskLevel: 'low',
-      denialRiskReasons: ['(mock) No obvious denial risks detected'],
+      denialRiskReasons: ['No obvious denial risks detected based on the current documentation.'],
       hadUndercodeHint: true,
       hadMissedServiceHint: procedures.length > 0,
     };

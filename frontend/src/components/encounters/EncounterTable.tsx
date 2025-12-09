@@ -1,5 +1,6 @@
 import React from 'react';
 import { EncounterSummaryDto } from '../../api/encounters';
+import { Badge } from '../ui/Badge';
 
 interface Props {
   encounters: EncounterSummaryDto[];
@@ -12,61 +13,62 @@ export const EncounterTable: React.FC<Props> = ({ encounters, onRowClick }) => {
     return date.toLocaleDateString();
   };
 
-  const formatStatus = (status: string) => {
-    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  const formatStatus = (status: string): { label: string; variant: 'default' | 'info' | 'success' } => {
+    const statusMap: Record<string, { label: string; variant: 'default' | 'info' | 'success' }> = {
+      draft: { label: 'Draft', variant: 'default' },
+      ai_suggested: { label: 'AI suggestion ready', variant: 'info' },
+      finalized: { label: 'Finalized', variant: 'success' },
+      billed: { label: 'Billed', variant: 'success' },
+    };
+    return statusMap[status] || { label: status.replace('_', ' '), variant: 'default' };
   };
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse border border-slate-300">
+      <table className="min-w-full border-collapse">
         <thead>
-          <tr className="bg-slate-100">
-            <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">Date</th>
-            <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-              Patient ID
-            </th>
-            <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-              Visit Type
-            </th>
-            <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-              Status
-            </th>
-            <th className="border border-slate-300 px-4 py-2 text-left text-sm font-medium">
-              E/M Code
-            </th>
+          <tr className="border-b border-semantic-border bg-slate-50 text-left text-sm font-medium text-semantic-muted">
+            <th className="px-4 py-3">Date</th>
+            <th className="px-4 py-3">Patient ID</th>
+            <th className="px-4 py-3">Visit Type</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">E/M Code</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-semantic-border">
           {encounters.length === 0 ? (
             <tr>
-              <td colSpan={5} className="border border-slate-300 px-4 py-8 text-center text-slate-500">
+              <td colSpan={5} className="px-4 py-8 text-center text-semantic-muted">
                 No encounters found
               </td>
             </tr>
           ) : (
-            encounters.map((encounter) => (
-              <tr
-                key={encounter.id}
-                onClick={() => onRowClick(encounter.id)}
-                className="hover:bg-slate-50 cursor-pointer"
-              >
-                <td className="border border-slate-300 px-4 py-2 text-sm">
-                  {formatDate(encounter.encounterDate)}
-                </td>
-                <td className="border border-slate-300 px-4 py-2 text-sm">
-                  {encounter.patientPseudoId}
-                </td>
-                <td className="border border-slate-300 px-4 py-2 text-sm">
-                  {encounter.visitType.replace('_', ' ')}
-                </td>
-                <td className="border border-slate-300 px-4 py-2 text-sm">
-                  {formatStatus(encounter.status)}
-                </td>
-                <td className="border border-slate-300 px-4 py-2 text-sm">
-                  {encounter.finalEmCode || encounter.aiEmSuggested || '-'}
-                </td>
-              </tr>
-            ))
+            encounters.map((encounter) => {
+              const statusInfo = formatStatus(encounter.status);
+              return (
+                <tr
+                  key={encounter.id}
+                  onClick={() => onRowClick(encounter.id)}
+                  className="cursor-pointer transition-colors duration-150 hover:bg-slate-50"
+                >
+                  <td className="px-4 py-3 text-sm text-brand-ink">
+                    {formatDate(encounter.encounterDate)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-brand-ink">
+                    {encounter.patientPseudoId}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-brand-ink">
+                    {encounter.visitType.replace('_', ' ')}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-mono text-brand-ink">
+                    {encounter.finalEmCode || encounter.aiEmSuggested || '—'}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

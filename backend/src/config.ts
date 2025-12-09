@@ -1,6 +1,8 @@
 export type Environment = 'development' | 'staging' | 'production' | 'test';
+export type AppEnv = 'dev' | 'pilot' | 'prod';
 
 const NODE_ENV = (process.env.NODE_ENV as Environment) || 'development';
+const APP_ENV = (process.env.APP_ENV as AppEnv) || 'dev';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -24,6 +26,11 @@ if (llmConfig.mode === 'openai' && !llmConfig.openaiApiKey) {
 }
 if (llmConfig.mode === 'anthropic' && !llmConfig.anthropicApiKey) {
   throw new Error('LLM_MODE=anthropic requires ANTHROPIC_API_KEY to be set');
+}
+
+// Enforce no mock LLM in pilot/prod environments
+if ((APP_ENV === 'pilot' || APP_ENV === 'prod') && llmConfig.mode === 'mock') {
+  throw new Error('LLM_MODE=mock is not allowed in pilot/prod environments. Set LLM_MODE=openai and provide OPENAI_API_KEY.');
 }
 
 export const plans = {
@@ -60,6 +67,10 @@ export type PlanKey = keyof typeof plans;
 
 export const config = {
   env: NODE_ENV,
+  appEnv: APP_ENV,
+  isDev: APP_ENV === 'dev',
+  isPilot: APP_ENV === 'pilot',
+  isProd: APP_ENV === 'prod',
   port: Number(process.env.PORT || 4000),
   databaseUrl: requireEnv('DATABASE_URL'),
   jwtSecret: requireEnv('JWT_SECRET'),

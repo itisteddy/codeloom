@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Spinner } from '../ui/Spinner';
+import { IS_DEV, IS_PILOT } from '../../version';
 
 interface Props {
   encounter: EncounterDto;
@@ -42,12 +43,13 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle>Codeloom Suggestions</CardTitle>
-            {encounter.aiModelId && (
+            {/* Only show model info in dev/pilot for debugging */}
+            {encounter.aiModelId && (IS_DEV || IS_PILOT) && (
               <CardDescription className="text-xs">
                 Model: <span className="font-mono">{encounter.aiModelId}</span>
               </CardDescription>
             )}
-          </div>
+      </div>
           <Button size="sm" onClick={onRunCodeloom} disabled={isRunning}>
             {isRunning ? 'Running…' : 'Run Codeloom'}
           </Button>
@@ -64,41 +66,41 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Spinner />
             <p className="mt-3 text-sm text-semantic-muted">Running Codeloom on this note…</p>
-          </div>
-        )}
+        </div>
+      )}
 
         {!hasSuggestions && encounter.status === 'draft' && !isRunning && (
           <div className="rounded-md border border-semantic-border bg-slate-50 px-4 py-3 text-sm text-semantic-muted">
             No suggestions yet. Paste your note and click Run Codeloom.
-          </div>
-        )}
+            </div>
+          )}
 
         {hasSuggestions && !isRunning && (
           <div className="space-y-4">
             {/* Safety Info */}
-            {encounter.aiSafetySummary &&
-              (encounter.aiSafetySummary.hadInvalidCodes ||
-                encounter.aiSafetySummary.filteredCodesCount > 0 ||
-                encounter.aiSafetySummary.hadFormatIssues) && (
+          {encounter.aiSafetySummary &&
+            (encounter.aiSafetySummary.hadInvalidCodes ||
+              encounter.aiSafetySummary.filteredCodesCount > 0 ||
+              encounter.aiSafetySummary.hadFormatIssues) && (
                 <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  ⚠ Some suggestions were filtered by safety checks. Review carefully.
-                </div>
-              )}
-            {encounter.aiConfidenceBucket && (
-              <div
-                className={`text-xs ${
-                  encounter.aiConfidenceBucket === 'low'
-                    ? 'text-red-600'
-                    : encounter.aiConfidenceBucket === 'medium'
-                    ? 'text-semantic-warning'
-                    : 'text-semantic-success'
-                }`}
-              >
-                {encounter.aiConfidenceBucket === 'low' && '⚠ Low confidence – double-check carefully.'}
-                {encounter.aiConfidenceBucket === 'medium' && '⚠ Medium confidence – review recommended.'}
-                {encounter.aiConfidenceBucket === 'high' && '✓ High confidence – still review before finalizing.'}
+                ⚠ Some suggestions were filtered by safety checks. Review carefully.
               </div>
             )}
+          {encounter.aiConfidenceBucket && (
+            <div
+              className={`text-xs ${
+                encounter.aiConfidenceBucket === 'low'
+                  ? 'text-red-600'
+                  : encounter.aiConfidenceBucket === 'medium'
+                    ? 'text-semantic-warning'
+                    : 'text-semantic-success'
+              }`}
+            >
+              {encounter.aiConfidenceBucket === 'low' && '⚠ Low confidence – double-check carefully.'}
+              {encounter.aiConfidenceBucket === 'medium' && '⚠ Medium confidence – review recommended.'}
+              {encounter.aiConfidenceBucket === 'high' && '✓ High confidence – still review before finalizing.'}
+            </div>
+          )}
 
             {/* E/M Section */}
             <div className="space-y-3 rounded-lg border border-semantic-border bg-white px-4 py-3">
@@ -113,7 +115,7 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                           ({formatConfidence(emRecommended.confidence)})
                         </span>
                       )}
-                    </div>
+        </div>
                     {emHighestSupported &&
                       emHighestSupported.code !== emRecommended.code && (
                         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -124,13 +126,13 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                           {formatConfidence(emHighestSupported.confidence) && (
                             <span className="text-semantic-muted">
                               ({formatConfidence(emHighestSupported.confidence)})
-                            </span>
-                          )}
-                        </div>
+                    </span>
+                  )}
+                </div>
                       )}
-                    {encounter.aiEmAlternatives && encounter.aiEmAlternatives.length > 0 && (
+                {encounter.aiEmAlternatives && encounter.aiEmAlternatives.length > 0 && (
                       <div className="flex flex-wrap gap-2 pt-1">
-                        {encounter.aiEmAlternatives.map((alt) => (
+                    {encounter.aiEmAlternatives.map((alt) => (
                           <Badge key={alt.code} variant={alt.recommended ? 'primary' : 'secondary'}>
                             {alt.code} · {alt.label}
                           </Badge>
@@ -149,7 +151,7 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
               <p className="text-xs font-medium uppercase text-slate-500">Diagnosis suggestions</p>
               {encounter.aiDiagnosisSuggestions && encounter.aiDiagnosisSuggestions.length > 0 ? (
                 <ul className="space-y-1">
-                  {encounter.aiDiagnosisSuggestions.map((diag, idx) => (
+                {encounter.aiDiagnosisSuggestions.map((diag, idx) => (
                     <li
                       key={`${diag.code}-${idx}`}
                       className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
@@ -159,7 +161,7 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                         {diag.description && (
                           <p className="text-xs text-slate-500">{diag.description}</p>
                         )}
-                      </div>
+                    </div>
                       <span className="text-xs text-slate-500">
                         {Math.round(diag.confidence * 100)}%
                       </span>
@@ -176,7 +178,7 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
               <p className="text-xs font-medium uppercase text-slate-500">Procedure suggestions</p>
               {encounter.aiProcedureSuggestions && encounter.aiProcedureSuggestions.length > 0 ? (
                 <ul className="space-y-1">
-                  {encounter.aiProcedureSuggestions.map((proc, idx) => (
+                {encounter.aiProcedureSuggestions.map((proc, idx) => (
                     <li
                       key={`${proc.code}-${idx}`}
                       className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
@@ -185,8 +187,8 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                         <p className="text-sm font-medium text-slate-900">{proc.code}</p>
                         {proc.description && (
                           <p className="text-xs text-slate-500">{proc.description}</p>
-                        )}
-                      </div>
+                      )}
+                    </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <span>{Math.round(proc.confidence * 100)}%</span>
                         <span
@@ -196,7 +198,7 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                         >
                           {proc.withinCuratedSet ? '✓ Curated' : 'Manual review'}
                         </span>
-                      </div>
+                  </div>
                     </li>
                   ))}
                 </ul>
@@ -254,9 +256,9 @@ export const EncounterSuggestionsPanel: React.FC<Props> = ({
                   </div>
                 </div>
               )}
-            </div>
           </div>
-        )}
+        </div>
+      )}
       </CardContent>
     </Card>
   );

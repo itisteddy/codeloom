@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Logo } from '../components/ui/Logo';
+import { IS_DEV } from '../version';
 
 export const LoginPage: React.FC = () => {
   const { user, login, isLoading, error } = useAuth();
-  const [email, setEmail] = useState('provider@example.com');
-  const [password, setPassword] = useState('changeme123');
+  // Only pre-fill credentials in dev environment for convenience
+  const [email, setEmail] = useState(IS_DEV ? 'provider@example.com' : '');
+  const [password, setPassword] = useState(IS_DEV ? 'changeme123' : '');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,7 +49,9 @@ export const LoginPage: React.FC = () => {
             <CardHeader>
               <CardTitle>Sign in to Codeloom</CardTitle>
               <CardDescription>
-                Use the seeded test account (e.g., provider@example.com / changeme123) for now.
+                {IS_DEV
+                  ? 'Use the seeded test account (provider@example.com / changeme123).'
+                  : 'Enter your email and password to access your practice.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
