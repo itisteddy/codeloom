@@ -146,6 +146,12 @@ export async function getEncounterForPractice(encounterId: string, practiceId: s
           email: true,
         },
       },
+      diagnosisCodes: {
+        orderBy: { index: 'asc' },
+      },
+      procedureCodes: {
+        orderBy: { index: 'asc' },
+      },
     },
   });
 }

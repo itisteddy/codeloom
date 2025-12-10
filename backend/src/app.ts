@@ -20,6 +20,7 @@ import { invitationsRouter } from './routes/invitations';
 import { inviteAcceptRouter } from './routes/inviteAccept';
 import { pilotAdminRouter } from './routes/pilotAdmin';
 import { npsRouter } from './routes/nps';
+import adminRouter from './routes/admin';
 import { metricsMiddleware } from './middleware/metrics';
 import { requestLoggerMiddleware } from './middleware/requestLogger';
 
@@ -41,6 +42,7 @@ app.use('/api/exports', exportsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/system', systemRouter);
 app.use('/api/admin', llmAdminRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/admin/onboarding', onboardingRouter);
 app.use('/api/admin/practices', invitationsRouter);
 app.use('/api/admin/pilot', pilotAdminRouter);

@@ -30,6 +30,34 @@ export interface AiSafetySummary {
   hadFormatIssues: boolean;
 }
 
+// Structured AI summary types
+export interface EmDisplay {
+  code: string;
+  confidence: number;
+  level?: number | null;
+}
+
+export interface CodeSuggestion {
+  code: string;
+  description?: string;
+  confidence?: number;
+}
+
+export interface FinalCode {
+  code: string;
+  description?: string;
+  modifiers?: string[];
+}
+
+export interface EncounterAiSummary {
+  emRecommended: EmDisplay | null;
+  emHighestSupported: EmDisplay | null;
+  diagnosisSuggestions: CodeSuggestion[];
+  procedureSuggestions: CodeSuggestion[];
+  finalDiagnoses: FinalCode[];
+  finalProcedures: FinalCode[];
+}
+
 export interface EncounterDto {
   id: string;
   practiceId: string;
@@ -57,6 +85,7 @@ export interface EncounterDto {
   finalEmCode?: string | null;
   finalDiagnosisCodes?: FinalDiagnosisCode[];
   finalProcedureCodes?: FinalProcedureCode[];
+  aiSummary?: EncounterAiSummary;
   createdAt: string;
   updatedAt: string;
   finalizedAt?: string | null;
@@ -194,5 +223,20 @@ export async function finalizeEncounter(token: string, id: string): Promise<Enco
 
 export async function getEncounterAudit(token: string, id: string): Promise<AuditEventDto[]> {
   return apiCall<AuditEventDto[]>(`/encounters/${id}/audit`, token);
+}
+
+// Update final codes using normalized tables
+export async function updateFinalCodes(
+  token: string,
+  id: string,
+  body: {
+    diagnoses: { code: string; description?: string }[];
+    procedures: { code: string; description?: string; modifiers?: string[] }[];
+  }
+): Promise<EncounterDto> {
+  return apiCall<EncounterDto>(`/encounters/${id}/final-codes`, token, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
 }
 

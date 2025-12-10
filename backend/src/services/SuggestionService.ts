@@ -146,23 +146,68 @@ export async function runSuggestionsForEncounter(params: {
   const confidenceBucket = result.confidenceBucket ?? toConfidenceBucket(recommended?.confidence ?? null);
   const hadUndercodeHint = Boolean(result.hadUndercodeHint || hasUndercodeDelta);
 
-  const updated = await prisma.encounter.update({
-    where: { id: encounter.id },
-    data: {
-      aiEmSuggested: recommended?.code ?? result.emSuggested ?? undefined,
-      aiEmAlternativesJson: result.emAlternatives as any,
-      aiEmConfidence: recommended?.confidence ?? result.emConfidence ?? undefined,
-      aiEmHighestSupportedCode: highestSupported?.code ?? undefined,
-      aiEmHighestSupportedConfidence: highestSupported?.confidence ?? undefined,
-      aiDiagnosisSuggestionsJson: result.diagnoses as any,
-      aiProcedureSuggestionsJson: result.procedures as any,
-      aiConfidenceBucket: confidenceBucket ?? undefined,
-      denialRiskLevel: (result.denialRiskLevel as DenialRiskLevel | null) ?? undefined,
-      denialRiskReasons: result.denialRiskReasons as any,
-      hadUndercodeHint,
-      hadMissedServiceHint: result.hadMissedServiceHint,
-      status: EncounterStatus.ai_suggested,
-    },
+  // Use a transaction to update encounter and create diagnosis/procedure records
+  const updated = await prisma.$transaction(async (tx) => {
+    // Update encounter with E/M and other suggestion data
+    const enc = await tx.encounter.update({
+      where: { id: encounter.id },
+      data: {
+        aiEmSuggested: recommended?.code ?? result.emSuggested ?? undefined,
+        aiEmAlternativesJson: result.emAlternatives as any,
+        aiEmConfidence: recommended?.confidence ?? result.emConfidence ?? undefined,
+        aiEmLevel: recommended?.level ?? undefined,
+        aiEmHighestSupportedCode: highestSupported?.code ?? undefined,
+        aiEmHighestSupportedConfidence: highestSupported?.confidence ?? undefined,
+        aiEmHighestSupportedLevel: highestSupported?.level ?? undefined,
+        aiDiagnosisSuggestionsJson: result.diagnoses as any,
+        aiProcedureSuggestionsJson: result.procedures as any,
+        aiConfidenceBucket: confidenceBucket ?? undefined,
+        denialRiskLevel: (result.denialRiskLevel as DenialRiskLevel | null) ?? undefined,
+        denialRiskReasons: result.denialRiskReasons as any,
+        hadUndercodeHint,
+        hadMissedServiceHint: result.hadMissedServiceHint,
+        status: EncounterStatus.ai_suggested,
+      },
+    });
+
+    // Clear previous AI suggestions for diagnosis/procedure
+    await tx.encounterDiagnosis.deleteMany({
+      where: { encounterId: encounter.id, source: 'ai_suggested' },
+    });
+    await tx.encounterProcedure.deleteMany({
+      where: { encounterId: encounter.id, source: 'ai_suggested' },
+    });
+
+    // Create new diagnosis suggestions
+    if (result.diagnoses && result.diagnoses.length > 0) {
+      await tx.encounterDiagnosis.createMany({
+        data: result.diagnoses.map((dx: any, idx: number) => ({
+          encounterId: encounter.id,
+          code: dx.code,
+          description: dx.description ?? null,
+          confidence: dx.confidence ?? null,
+          source: 'ai_suggested',
+          index: idx,
+        })),
+      });
+    }
+
+    // Create new procedure suggestions
+    if (result.procedures && result.procedures.length > 0) {
+      await tx.encounterProcedure.createMany({
+        data: result.procedures.map((proc: any, idx: number) => ({
+          encounterId: encounter.id,
+          code: proc.code,
+          description: proc.description ?? null,
+          modifiers: [],
+          confidence: proc.confidence ?? null,
+          source: 'ai_suggested',
+          index: idx,
+        })),
+      });
+    }
+
+    return enc;
   });
 
   // Log AI_SUGGESTED_CODES event

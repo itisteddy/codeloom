@@ -8,6 +8,7 @@ export type SafeAuditPayload =
   | { field: 'finalEmCode'; from?: string | null; to?: string | null }
   | { field: 'diagnosisCodes'; added: string[]; removed: string[] }
   | { field: 'procedureCodes'; added: string[]; removed: string[] }
+  | { field: 'finalCodes'; dxCount: number; procCount: number }
   | { field: 'status'; from: string; to: string }
   | { type: 'AI_SUGGESTION'; hasEm: boolean; dxCount: number; procCount: number; modelId?: string }
   | { type: 'TRAINING_ATTEMPT'; scorePercent: number }

@@ -65,6 +65,55 @@ function toEncounterDto(encounter: any, safetySummary?: any, modelId?: string) {
     }
   }
   
+  // Build aiSummary object for structured access
+  dto.aiSummary = {
+    emRecommended: encounter.aiEmSuggested
+      ? {
+          code: encounter.aiEmSuggested,
+          confidence: encounter.aiEmConfidence ?? 0,
+          level: encounter.aiEmLevel ?? null,
+        }
+      : null,
+    emHighestSupported: encounter.aiEmHighestSupportedCode
+      ? {
+          code: encounter.aiEmHighestSupportedCode,
+          confidence: encounter.aiEmHighestSupportedConfidence ?? 0,
+          level: encounter.aiEmHighestSupportedLevel ?? null,
+        }
+      : null,
+    diagnosisSuggestions: encounter.diagnosisCodes
+      ?.filter((d: any) => d.source === 'ai_suggested')
+      .sort((a: any, b: any) => a.index - b.index)
+      .map((d: any) => ({
+        code: d.code,
+        description: d.description,
+        confidence: d.confidence,
+      })) || encounter.aiDiagnosisSuggestionsJson || [],
+    procedureSuggestions: encounter.procedureCodes
+      ?.filter((p: any) => p.source === 'ai_suggested')
+      .sort((a: any, b: any) => a.index - b.index)
+      .map((p: any) => ({
+        code: p.code,
+        description: p.description,
+        confidence: p.confidence,
+      })) || encounter.aiProcedureSuggestionsJson || [],
+    finalDiagnoses: encounter.diagnosisCodes
+      ?.filter((d: any) => d.source === 'final')
+      .sort((a: any, b: any) => a.index - b.index)
+      .map((d: any) => ({
+        code: d.code,
+        description: d.description,
+      })) || dto.finalDiagnosisCodes || [],
+    finalProcedures: encounter.procedureCodes
+      ?.filter((p: any) => p.source === 'final')
+      .sort((a: any, b: any) => a.index - b.index)
+      .map((p: any) => ({
+        code: p.code,
+        description: p.description,
+        modifiers: p.modifiers,
+      })) || dto.finalProcedureCodes || [],
+  };
+  
   return dto;
 }
 
@@ -393,6 +442,90 @@ encountersRouter.patch('/:id/codes', requireAuth, async (req: AuthenticatedReque
       return res.status(404).json({ error: 'Encounter not found' });
     }
     return res.status(500).json({ error: error.message || 'Failed to update codes' });
+  }
+});
+
+// PUT /api/encounters/:id/final-codes - update final codes using normalized tables
+encountersRouter.put('/:id/final-codes', requireAuth, requireRole(['biller', 'admin']), async (req: AuthenticatedRequest, res) => {
+  try {
+    const encounterId = req.params.id;
+    const { practiceId } = req.user!;
+
+    const exists = await ensureEncounterInPractice(encounterId, practiceId);
+    if (!exists) {
+      return res.status(404).json({ error: 'Encounter not found' });
+    }
+
+    const { diagnoses, procedures } = req.body as {
+      diagnoses?: { code: string; description?: string }[];
+      procedures?: { code: string; description?: string; modifiers?: string[] }[];
+    };
+
+    await prisma.$transaction(async (tx) => {
+      // Clear existing final codes
+      await tx.encounterDiagnosis.deleteMany({
+        where: { encounterId, source: 'final' },
+      });
+      await tx.encounterProcedure.deleteMany({
+        where: { encounterId, source: 'final' },
+      });
+
+      // Insert new final diagnoses
+      if (diagnoses && diagnoses.length > 0) {
+        await tx.encounterDiagnosis.createMany({
+          data: diagnoses.map((dx, idx) => ({
+            encounterId,
+            code: dx.code,
+            description: dx.description ?? null,
+            source: 'final',
+            index: idx,
+          })),
+        });
+      }
+
+      // Insert new final procedures
+      if (procedures && procedures.length > 0) {
+        await tx.encounterProcedure.createMany({
+          data: procedures.map((proc, idx) => ({
+            encounterId,
+            code: proc.code,
+            description: proc.description ?? null,
+            modifiers: proc.modifiers ?? [],
+            source: 'final',
+            index: idx,
+          })),
+        });
+      }
+    });
+
+    // Log audit event
+    await logAuditEvent({
+      practiceId,
+      encounterId,
+      userId: req.user!.id,
+      userRole: req.user!.role,
+      action: 'USER_CHANGED_PROCEDURE',
+      payload: {
+        field: 'finalCodes',
+        dxCount: diagnoses?.length ?? 0,
+        procCount: procedures?.length ?? 0,
+      },
+    });
+
+    // Fetch updated encounter with codes
+    const encounter = await prisma.encounter.findUnique({
+      where: { id: encounterId },
+      include: {
+        diagnosisCodes: true,
+        procedureCodes: true,
+      },
+    });
+
+    return res.json(toEncounterDto(encounter));
+  } catch (error: any) {
+    // eslint-disable-next-line no-console
+    console.error('Error updating final codes:', error);
+    return res.status(500).json({ error: error.message || 'Failed to update final codes' });
   }
 });
 

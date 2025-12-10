@@ -93,6 +93,7 @@ model User {
   role                UserRole
   firstName           String
   lastName            String
+  isActive            Boolean             @default(true)
   encounters          Encounter[]         @relation("EncounterProvider")
   finalizedEncounters Encounter[]         @relation("EncounterFinalizer")
   trainingAttempts    TrainingAttempt[]
@@ -129,11 +130,17 @@ model Encounter {
   aiEmSuggested            String?
   aiEmAlternativesJson     Json?   // store alternatives as JSON
   aiEmConfidence           Float?
+  aiEmLevel                Int?    // numeric level 2-5 derived from code
   aiEmHighestSupportedCode String?
   aiEmHighestSupportedConfidence Float?
+  aiEmHighestSupportedLevel Int?   // numeric level for highest supported
   aiDiagnosisSuggestionsJson Json?
   aiProcedureSuggestionsJson Json?
   aiConfidenceBucket       ConfidenceBucket?
+  
+  // Related diagnosis and procedure records
+  diagnosisCodes     EncounterDiagnosis[]
+  procedureCodes     EncounterProcedure[]
 
   // Final codes
   finalEmCode        String?
@@ -300,5 +307,36 @@ model PracticeNpsResponse {
 
   @@index([practiceId, createdAt])
   @@index([userId])
+}
+
+// Normalized diagnosis codes for encounters
+model EncounterDiagnosis {
+  id           String    @id @default(uuid())
+  encounter    Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  encounterId  String
+  code         String    // ICD-10 code
+  description  String?
+  source       String    // 'ai_suggested' | 'final'
+  confidence   Float?
+  index        Int       // order/position
+  createdAt    DateTime  @default(now())
+
+  @@index([encounterId, source])
+}
+
+// Normalized procedure codes for encounters
+model EncounterProcedure {
+  id           String    @id @default(uuid())
+  encounter    Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  encounterId  String
+  code         String    // CPT/HCPCS code
+  description  String?
+  modifiers    String[]  // modifier codes
+  source       String    // 'ai_suggested' | 'final'
+  confidence   Float?
+  index        Int       // order/position
+  createdAt    DateTime  @default(now())
+
+  @@index([encounterId, source])
 }
 
