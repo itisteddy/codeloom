@@ -80,6 +80,9 @@ model Practice {
   llmModeOverride        String?  // 'mock' | 'openai' | null
   providerCanFinalize    Boolean  @default(true)
   pilotBaselineJson      Json?
+  // PHI retention and storage settings
+  phiRetentionDays       Int?     // number of days to retain PHI at rest; null means "retain until deleted"
+  storePhiAtRest         Boolean  @default(true) // if false, minimize PHI at rest and rely on transient processing
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }

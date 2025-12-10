@@ -132,3 +132,35 @@ export async function cancelInvite(
   });
 }
 
+// Security types
+export interface SecuritySettings {
+  phiRetentionDays: number | null;
+  storePhiAtRest: boolean;
+}
+
+// Security API
+export async function getSecuritySettings(token: string): Promise<SecuritySettings> {
+  return apiCall<SecuritySettings>('/admin/security', token);
+}
+
+export async function updateSecuritySettings(
+  token: string,
+  settings: SecuritySettings
+): Promise<SecuritySettings> {
+  return apiCall<SecuritySettings>('/admin/security', token, {
+    method: 'POST',
+    body: JSON.stringify(settings),
+  });
+}
+
+// Dev-only: Apply PHI retention
+export async function applyPhiRetention(
+  token: string,
+  practiceId?: string
+): Promise<{ ok: boolean; message: string }> {
+  return apiCall<{ ok: boolean; message: string }>('/dev/phi-retention/apply', token, {
+    method: 'POST',
+    body: JSON.stringify({ practiceId }),
+  });
+}
+

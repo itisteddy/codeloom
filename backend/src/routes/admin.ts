@@ -4,6 +4,7 @@ import { plans, config } from '../config';
 import { UserRole } from '@prisma/client';
 import crypto from 'crypto';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
+import { logError, logInfo } from '../utils/logger';
 
 const router = Router();
 
@@ -294,6 +295,87 @@ router.delete('/team/invite/:id', requireAdminRole, async (req: AuthenticatedReq
   } catch (err) {
     console.error('Error canceling invite:', err);
     res.status(500).json({ error: 'Failed to cancel invite' });
+  }
+});
+
+// GET /admin/security - Get PHI security settings
+router.get('/security', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
+  const practiceId = req.user!.practiceId;
+  try {
+    const practice = await prisma.practice.findUnique({
+      where: { id: practiceId },
+      select: {
+        phiRetentionDays: true,
+        storePhiAtRest: true,
+      },
+    });
+
+    if (!practice) {
+      return res.status(404).json({ error: 'Practice not found' });
+    }
+
+    logInfo('Security settings retrieved', { practiceId });
+    res.json({
+      phiRetentionDays: practice.phiRetentionDays,
+      storePhiAtRest: practice.storePhiAtRest,
+    });
+  } catch (err: any) {
+    logError('Error fetching security settings', { practiceId, error: err.message });
+    res.status(500).json({ error: 'Failed to fetch security settings' });
+  }
+});
+
+// POST /admin/security - Update PHI security settings
+router.post('/security', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
+  const practiceId = req.user!.practiceId;
+  try {
+    const { phiRetentionDays, storePhiAtRest } = req.body as {
+      phiRetentionDays?: number | null;
+      storePhiAtRest?: boolean;
+    };
+
+    // Validation
+    if (phiRetentionDays !== undefined && phiRetentionDays !== null) {
+      if (typeof phiRetentionDays !== 'number' || phiRetentionDays < 0 || phiRetentionDays > 3650) {
+        return res.status(400).json({
+          error: 'phiRetentionDays must be a number between 0 and 3650 (or null)',
+        });
+      }
+    }
+
+    if (storePhiAtRest !== undefined && typeof storePhiAtRest !== 'boolean') {
+      return res.status(400).json({ error: 'storePhiAtRest must be a boolean' });
+    }
+
+    const updateData: any = {};
+    if (phiRetentionDays !== undefined) {
+      updateData.phiRetentionDays = phiRetentionDays;
+    }
+    if (storePhiAtRest !== undefined) {
+      updateData.storePhiAtRest = storePhiAtRest;
+    }
+
+    const practice = await prisma.practice.update({
+      where: { id: practiceId },
+      data: updateData,
+      select: {
+        phiRetentionDays: true,
+        storePhiAtRest: true,
+      },
+    });
+
+    logInfo('Security settings updated', {
+      practiceId,
+      phiRetentionDays: practice.phiRetentionDays,
+      storePhiAtRest: practice.storePhiAtRest,
+    });
+    res.json({
+      phiRetentionDays: practice.phiRetentionDays,
+      storePhiAtRest: practice.storePhiAtRest,
+    });
+  } catch (err: any) {
+    logError('Error updating security settings', { practiceId, error: err.message });
+    res.status(500).json({ error: 'Failed to update security settings' });
   }
 });
 

@@ -28,6 +28,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       { label: 'Analytics', to: '/analytics', roles: ['biller', 'admin'] },
       { label: 'Billing', to: '/admin/billing', roles: ['admin'] },
       { label: 'Team', to: '/admin/team', roles: ['admin'] },
+      { label: 'Security & Data', to: '/admin/security', roles: ['admin'] },
       { label: 'Settings', to: '/settings/practice', roles: ['biller', 'admin'] },
       { label: 'Pilot Summary', to: '/admin/pilot/summary', roles: ['admin'] },
       { label: 'Onboarding', to: '/admin/pilot/onboarding', roles: ['admin'] },

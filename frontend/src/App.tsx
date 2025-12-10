@@ -14,6 +14,7 @@ import { PilotSummaryPage } from './pages/PilotSummaryPage';
 import { PilotOnboardingPage } from './pages/PilotOnboardingPage';
 import { BillingPage } from './pages/admin/BillingPage';
 import { TeamPage } from './pages/admin/TeamPage';
+import { SecurityPage } from './pages/admin/SecurityPage';
 import { PracticeNpsPrompt } from './components/PracticeNpsPrompt';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 
@@ -145,6 +146,16 @@ const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <RootLayout>
               <TeamPage />
+            </RootLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/security"
+        element={
+          <ProtectedRoute>
+            <RootLayout>
+              <SecurityPage />
             </RootLayout>
           </ProtectedRoute>
         }
