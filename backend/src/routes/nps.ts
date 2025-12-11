@@ -37,7 +37,7 @@ npsRouter.post('/practice/nps', requireAuth, async (req: AuthenticatedRequest, r
 npsRouter.get(
   '/admin/practice/nps',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { fromDate, toDate } = req.query;

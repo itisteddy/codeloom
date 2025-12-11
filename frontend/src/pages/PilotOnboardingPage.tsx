@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPilotConfig, updatePilotConfig } from '../api/pilotConfig';
 import { createInvite, listInvites, UserInvite } from '../api/invitations';
 import { getPlanInfo } from '../api/plan';
+import { isAdmin } from '../types/roles';
 
 const SPECIALTY_OPTIONS = [
   'primary_care',
@@ -46,7 +47,7 @@ export const PilotOnboardingPage: React.FC = () => {
   const [providerCanFinalize, setProviderCanFinalize] = useState(true);
 
   useEffect(() => {
-    if (!token || user?.role !== 'admin') {
+    if (!token || !isAdmin(user?.role)) {
       navigate('/encounters');
       return;
     }
@@ -177,7 +178,7 @@ export const PilotOnboardingPage: React.FC = () => {
     }
   };
 
-  if (user?.role !== 'admin') {
+  if (!isAdmin(user?.role)) {
     return null;
   }
 

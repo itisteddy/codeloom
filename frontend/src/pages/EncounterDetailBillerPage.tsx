@@ -17,6 +17,7 @@ import {
 } from '../api/encounters';
 import { AuditTrailModal } from '../components/encounters/AuditTrailModal';
 import { EncounterFeedbackPanel } from '../components/encounters/EncounterFeedbackPanel';
+import { canFinalize } from '../types/roles';
 
 export const EncounterDetailBillerPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -550,7 +551,7 @@ export const EncounterDetailBillerPage: React.FC = () => {
               <Button onClick={handleSaveCodes} disabled={isSavingCodes}>
                 {isSavingCodes ? 'Saving...' : 'Save Codes'}
               </Button>
-              {(user?.role === 'biller' || user?.role === 'admin') && (
+              {canFinalize(user?.role) && (
                 <>
                   <Button
                     onClick={handleFinalize}

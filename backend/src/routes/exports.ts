@@ -52,7 +52,7 @@ function arrayToCsvRow(values: any[]): string {
 }
 
 // GET /api/exports/encounters (biller/admin only)
-exportsRouter.get('/encounters', requireAuth, requireRole(['biller', 'admin']), async (req: AuthenticatedRequest, res) => {
+exportsRouter.get('/encounters', requireAuth, requireRole(['biller', 'practice_admin', 'platform_admin']), async (req: AuthenticatedRequest, res) => {
   try {
     // Check entitlement
     try {

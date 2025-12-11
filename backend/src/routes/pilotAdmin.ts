@@ -9,7 +9,7 @@ export const pilotAdminRouter = Router();
 pilotAdminRouter.get(
   '/config',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const config = await getPilotConfig(req.user!.practiceId);
@@ -26,7 +26,7 @@ pilotAdminRouter.get(
 pilotAdminRouter.post(
   '/config',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const updates = req.body as {
@@ -63,7 +63,7 @@ pilotAdminRouter.post(
 pilotAdminRouter.post(
   '/baseline',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const baseline = req.body;

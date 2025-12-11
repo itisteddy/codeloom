@@ -5,10 +5,12 @@ import {
   downloadEncountersCsv,
   PracticeAnalyticsSummary,
 } from '../api/analytics';
-import { PracticeNpsPrompt } from '../components/PracticeNpsPrompt';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
 export const AnalyticsPage: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [summary, setSummary] = useState<PracticeAnalyticsSummary | null>(null);
@@ -86,142 +88,163 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Analytics</h1>
-      {(user?.role === 'biller' || user?.role === 'admin') && <PracticeNpsPrompt />}
-
-      {/* Filters */}
-      <div className="mb-6 flex gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium mb-1">From Date</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="border rounded px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">To Date</label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="border rounded px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
-        >
-          {isLoading ? 'Loading...' : 'Refresh'}
-        </button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-brand-ink">Analytics</h1>
+        <p className="mt-1 text-sm text-semantic-muted">
+          See how Codeloom is being used across your practice.
+        </p>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Date Range</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4 items-end">
+            <Input
+              label="From Date"
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-auto"
+            />
+            <Input
+              label="To Date"
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-auto"
+            />
+            <Button onClick={handleRefresh} loading={isLoading}>
+              {isLoading ? 'Loading...' : 'Refresh'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {isLoading && !summary ? (
-        <div className="text-center py-8 text-slate-600">Loading analytics...</div>
+        <div className="text-center py-8 text-semantic-muted">Loading practice analytics...</div>
       ) : summary ? (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Encounters */}
-            <div className="border border-slate-200 rounded p-4 bg-white">
-              <h3 className="text-sm font-medium text-slate-600 mb-1">Total Encounters</h3>
-              <div className="text-3xl font-bold text-slate-900">{summary.encounterCount}</div>
-              <div className="text-sm text-slate-600 mt-1">
-                Finalized: {summary.finalizedCount}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-medium text-semantic-muted mb-1">Practice Encounters</h3>
+                <div className="text-3xl font-bold text-brand-ink">{summary.encounterCount}</div>
+                <div className="text-sm text-semantic-muted mt-1">
+                  Finalized: {summary.finalizedCount}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* AI Usage */}
-            <div className="border border-slate-200 rounded p-4 bg-white">
-              <h3 className="text-sm font-medium text-slate-600 mb-1">AI Usage</h3>
-              <div className="text-3xl font-bold text-slate-900">
-                {summary.aiSuggestedCount}
-              </div>
-              <div className="text-sm text-slate-600 mt-1">
-                Usage rate: {Math.round(summary.aiUsageRate * 100)}%
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-medium text-semantic-muted mb-1">AI Suggestions Used</h3>
+                <div className="text-3xl font-bold text-brand-ink">
+                  {summary.aiSuggestedCount}
+                </div>
+                <div className="text-sm text-semantic-muted mt-1">
+                  Practice usage rate: {Math.round(summary.aiUsageRate * 100)}%
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Overrides */}
-            <div className="border border-slate-200 rounded p-4 bg-white">
-              <h3 className="text-sm font-medium text-slate-600 mb-1">Overrides</h3>
-              <div className="text-3xl font-bold text-slate-900">
-                {Math.round(summary.overrideRate * 100)}%
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                Percent of AI-suggested E/M codes that were changed
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-medium text-semantic-muted mb-1">Override Rate</h3>
+                <div className="text-3xl font-bold text-brand-ink">
+                  {Math.round(summary.overrideRate * 100)}%
+                </div>
+                <div className="text-xs text-semantic-muted mt-1">
+                  AI E/M codes changed by billers across practice
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Time to Finalize */}
-            <div className="border border-slate-200 rounded p-4 bg-white">
-              <h3 className="text-sm font-medium text-slate-600 mb-1">Time to Finalize</h3>
-              {summary.avgTimeToFinalizeMinutes !== null ? (
-                <>
-                  <div className="text-3xl font-bold text-slate-900">
-                    {summary.avgTimeToFinalizeMinutes.toFixed(1)}
-                  </div>
-                  <div className="text-sm text-slate-600 mt-1">minutes (avg)</div>
-                </>
-              ) : (
-                <div className="text-sm text-slate-500">No finalized encounters</div>
-              )}
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-medium text-semantic-muted mb-1">Avg Time to Finalize</h3>
+                {summary.avgTimeToFinalizeMinutes !== null ? (
+                  <>
+                    <div className="text-3xl font-bold text-brand-ink">
+                      {summary.avgTimeToFinalizeMinutes.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-semantic-muted mt-1">minutes (practice avg)</div>
+                  </>
+                ) : (
+                  <div className="text-sm text-semantic-muted">No finalized encounters</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Training Metrics */}
-          <div className="border border-slate-200 rounded p-4 bg-white mb-6">
-            <h2 className="font-medium mb-3">Training Metrics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-slate-600">Training attempts: </span>
-                <span className="font-medium">{summary.trainingAttemptsCount}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Training Metrics</CardTitle>
+              <CardDescription>Practice-wide training activity and performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-semantic-muted">Total training attempts: </span>
+                  <span className="font-medium text-brand-ink">{summary.trainingAttemptsCount}</span>
+                </div>
+                <div>
+                  {summary.avgTrainingScorePercent !== null ? (
+                    <>
+                      <span className="text-sm text-semantic-muted">Avg training score: </span>
+                      <span className="font-medium text-brand-ink">
+                        {summary.avgTrainingScorePercent.toFixed(1)}%
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-semantic-muted">No training attempts yet</span>
+                  )}
+                </div>
               </div>
-              <div>
-                {summary.avgTrainingScorePercent !== null ? (
-                  <>
-                    <span className="text-sm text-slate-600">Avg training score: </span>
-                    <span className="font-medium">
-                      {summary.avgTrainingScorePercent.toFixed(1)}%
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-sm text-slate-500">No training attempts yet</span>
-                )}
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Export Section */}
-          <div className="border border-slate-200 rounded p-4 bg-white">
-            <h2 className="font-medium mb-3">Export Data</h2>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleDownloadCsv}
-                disabled={isDownloading}
-                className="bg-slate-900 text-white px-4 py-2 rounded text-sm hover:bg-slate-800 disabled:opacity-60"
-              >
-                {isDownloading ? 'Downloading...' : 'Download encounters CSV'}
-              </button>
-              <p className="text-sm text-slate-600">
-                Exports all encounters in this date range for your practice.
-              </p>
-            </div>
-            {downloadError && (
-              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                {downloadError}
+          <Card>
+            <CardHeader>
+              <CardTitle>Export Data</CardTitle>
+              <CardDescription>Download encounter data for reporting and analysis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-4">
+                <Button
+                  onClick={handleDownloadCsv}
+                  loading={isDownloading}
+                  variant="secondary"
+                >
+                  {isDownloading ? 'Downloading...' : 'Download encounters CSV'}
+                </Button>
+                <p className="text-sm text-semantic-muted">
+                  Exports all practice encounters in this date range.
+                </p>
               </div>
-            )}
-          </div>
+              {downloadError && (
+                <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {downloadError}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       ) : null}
     </div>

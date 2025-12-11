@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getPracticeConfig, updatePracticeConfig, PracticeConfig } from '../api/practiceConfig';
+import { canFinalize } from '../types/roles';
 
 export const PracticeSettingsPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -17,7 +18,7 @@ export const PracticeSettingsPage: React.FC = () => {
   const [newSpecialty, setNewSpecialty] = useState('');
 
   useEffect(() => {
-    if (!token || (user?.role !== 'biller' && user?.role !== 'admin')) {
+    if (!token || !canFinalize(user?.role)) {
       return;
     }
 
@@ -69,11 +70,11 @@ export const PracticeSettingsPage: React.FC = () => {
     setEnabledSpecialties(enabledSpecialties.filter((s) => s !== specialty));
   };
 
-  if (user?.role !== 'biller' && user?.role !== 'admin') {
+  if (!canFinalize(user?.role)) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          Access denied. This page is only available to billers and administrators.
+          Access denied. This page is only available to billers and Practice Admins.
         </div>
       </div>
     );

@@ -45,7 +45,7 @@ export async function createPracticeWithAdmin(
       practiceId: practice.id,
       email: data.adminEmail,
       passwordHash,
-      role: UserRole.admin,
+      role: UserRole.practice_admin,
       firstName: data.adminFirstName,
       lastName: data.adminLastName,
     },

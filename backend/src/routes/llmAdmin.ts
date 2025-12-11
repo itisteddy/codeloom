@@ -11,7 +11,7 @@ export const llmAdminRouter = Router();
 llmAdminRouter.post(
   '/evaluate',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { limit } = req.body as { limit?: number };
@@ -35,7 +35,7 @@ llmAdminRouter.post(
 llmAdminRouter.post(
   '/evaluate-profiles',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { profiles, limit } = req.body as { profiles?: string[]; limit?: number };
@@ -59,7 +59,7 @@ llmAdminRouter.post(
 llmAdminRouter.get(
   '/evals',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const limit = parseInt((req.query.limit as string) || '20', 10);

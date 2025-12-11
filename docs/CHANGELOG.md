@@ -37,3 +37,45 @@ All notable changes to the Codeloom project will be documented in this file.
 
 - Migration: `20251210_add_phi_settings` - Adds `phiRetentionDays` and `storePhiAtRest` columns to Practice table
 
+---
+
+## Sub-phase A – Roles, Navigation & Analytics Cleanup
+
+### Backend Changes
+
+- **UserRole Enum Update**: Extended Prisma enum to include PRD-compliant roles:
+  - `provider` - Clinical staff who document encounters
+  - `biller` - Coding specialists who finalize codes
+  - `practice_admin` - Practice owners/admins who manage team, billing, and settings
+  - `platform_admin` - Codeloom internal staff with cross-tenant access
+- **Admin Routes**: Updated `requireAdminRole` middleware to accept `practice_admin`, `platform_admin`, and legacy `admin` roles
+- **Migration**: `20251210_update_user_roles` - Adds new role values and migrates existing `admin` users to `practice_admin`
+
+### Frontend Changes
+
+- **Role Types** (`src/types/roles.ts`):
+  - Created shared role type definitions matching PRD
+  - Added helper functions: `isAdmin()`, `canAccessAnalytics()`, `canAccessAdmin()`, `getRoleLabel()`, `normalizeRole()`
+- **Auth Context**: Updated to normalize legacy `admin` role to `practice_admin`
+- **Navigation (AppShell)**:
+  - Providers/Billers see: Encounters, Training, Settings
+  - Practice Admins/Platform Admins see: Encounters, Training, Analytics, Admin, Settings
+- **Route Guards**:
+  - Added `AdminRoute` component that redirects non-admins to `/encounters`
+  - Analytics route (`/analytics`) now requires admin role
+  - All `/admin/*` routes require admin role
+- **Admin Landing Page** (`/admin`):
+  - New hub page with links to Team, Billing & Plan, Security & Data
+  - Clear descriptions of each admin function
+- **Settings Page** (`/settings`):
+  - Personal profile page accessible to all users
+  - Shows name, email, role (read-only for now)
+  - Placeholder sections for Preferences and Security (to be expanded in Sub-phase C)
+- **Analytics Page**:
+  - Removed in-app NPS widget (NPS will be collected outside the app)
+  - Updated copy to emphasize practice-level metrics:
+    - "Practice Encounters" instead of "Total Encounters"
+    - "Practice usage rate" and "practice avg" labels
+    - "See how Codeloom is being used across your practice" subheading
+  - Applied consistent Card-based UI styling
+

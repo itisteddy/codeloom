@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { EncounterDetailProviderPage } from './EncounterDetailProviderPage';
 import { EncounterDetailBillerPage } from './EncounterDetailBillerPage';
+import { canFinalize } from '../types/roles';
 
 export const EncounterDetailRouterPage: React.FC = () => {
   const { user } = useAuth();
@@ -14,7 +15,8 @@ export const EncounterDetailRouterPage: React.FC = () => {
     return <EncounterDetailProviderPage />;
   }
 
-  if (user.role === 'biller' || user.role === 'admin') {
+  // Billers and admins use the biller view (with finalization capabilities)
+  if (canFinalize(user.role)) {
     return <EncounterDetailBillerPage />;
   }
 

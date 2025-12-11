@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
-
-type UserRole = 'provider' | 'biller' | 'admin';
+import { AnyUserRole, normalizeRole, UserRole } from '../types/roles';
 
 interface AuthUser {
   id: string;
@@ -62,7 +61,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await res.json();
-      const authUser: AuthUser = data.user;
+      // Normalize legacy 'admin' role to 'practice_admin'
+      const rawUser = data.user;
+      const authUser: AuthUser = {
+        ...rawUser,
+        role: normalizeRole(rawUser.role as AnyUserRole),
+      };
       const authToken: string = data.token;
 
       setUser(authUser);

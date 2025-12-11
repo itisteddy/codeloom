@@ -37,7 +37,7 @@ onboardingRouter.post('/practice', async (req, res) => {
 onboardingRouter.post(
   '/invite',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;

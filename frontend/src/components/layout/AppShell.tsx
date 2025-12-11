@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { IS_DEV, IS_PILOT, APP_VERSION } from '../../version';
+import { isAdmin, getRoleLabel, UserRole } from '../../types/roles';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -13,7 +14,7 @@ interface AppShellProps {
 interface NavItem {
   label: string;
   to: string;
-  roles?: Array<'provider' | 'biller' | 'admin'>;
+  adminOnly?: boolean; // Only show to practice_admin and platform_admin
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
@@ -21,27 +22,29 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const userIsAdmin = isAdmin(user?.role);
+
+  // Navigation based on PRD:
+  // - All users: Encounters, Training, Settings (personal)
+  // - Admins only: Analytics, Admin section
   const navItems: NavItem[] = useMemo(
     () => [
       { label: 'Encounters', to: '/encounters' },
       { label: 'Training', to: '/training' },
-      { label: 'Analytics', to: '/analytics', roles: ['biller', 'admin'] },
-      { label: 'Billing', to: '/admin/billing', roles: ['admin'] },
-      { label: 'Team', to: '/admin/team', roles: ['admin'] },
-      { label: 'Security & Data', to: '/admin/security', roles: ['admin'] },
-      { label: 'Settings', to: '/settings/practice', roles: ['biller', 'admin'] },
-      { label: 'Pilot Summary', to: '/admin/pilot/summary', roles: ['admin'] },
-      { label: 'Onboarding', to: '/admin/pilot/onboarding', roles: ['admin'] },
+      { label: 'Analytics', to: '/analytics', adminOnly: true },
+      { label: 'Admin', to: '/admin', adminOnly: true },
+      { label: 'Settings', to: '/settings' },
     ],
     []
   );
 
   // Show a user-friendly practice name (in a real app, this would come from the practice record)
   const practiceLabel = 'Sample Family Practice';
-  const roleLabel = user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : 'User';
+  const roleLabel = getRoleLabel(user?.role as UserRole | undefined);
 
   const renderNav = (item: NavItem) => {
-    if (item.roles && user && !item.roles.includes(user.role)) return null;
+    // Hide admin-only items from non-admin users
+    if (item.adminOnly && !userIsAdmin) return null;
     const active = location.pathname.startsWith(item.to);
     return (
       <Link

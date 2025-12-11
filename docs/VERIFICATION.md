@@ -160,3 +160,128 @@ This document provides step-by-step instructions for manually verifying features
   - If `phiRetentionDays = 30`: Only encounters older than 30 days have PHI redacted
   - If both are set: The more restrictive policy applies
 
+---
+
+## Sub-phase A – Roles, Navigation & Analytics Cleanup
+
+### Prerequisites
+
+- Deployed frontend and backend with Sub-phase A changes
+- Test users with different roles:
+  - Provider: `provider@example.com` / `changeme123`
+  - Biller: `biller@example.com` / `changeme123`
+  - Practice Admin: Update an existing user to `practice_admin` role via SQL
+
+### Verification Steps
+
+#### 1. Verify Navigation for Provider/Biller
+
+1. **Login as Provider**
+   - Go to login page
+   - Email: `provider@example.com`
+   - Password: `changeme123`
+
+2. **Check Navigation**
+   - Sidebar should show ONLY:
+     - Encounters
+     - Training
+     - Settings
+   - Should NOT see: Analytics, Admin
+
+3. **Attempt Direct URL Access**
+   - Manually navigate to `/analytics` in browser
+   - Should be redirected to `/encounters`
+   - Manually navigate to `/admin`
+   - Should be redirected to `/encounters`
+
+4. **Repeat for Biller**
+   - Logout and login as `biller@example.com`
+   - Verify same navigation (Encounters, Training, Settings only)
+
+#### 2. Verify Navigation for Practice Admin
+
+1. **Create or Upgrade Admin User**
+   - Run in Supabase SQL Editor:
+   ```sql
+   UPDATE "User" SET role = 'practice_admin' WHERE email = 'biller@example.com';
+   ```
+   - Or create new admin user
+
+2. **Login as Practice Admin**
+   - Login with the admin user
+
+3. **Check Navigation**
+   - Sidebar should show:
+     - Encounters
+     - Training
+     - Analytics
+     - Admin
+     - Settings
+
+4. **Access Analytics**
+   - Click Analytics
+   - Page should load without redirect
+   - Should see practice-level metrics:
+     - "See how Codeloom is being used across your practice"
+     - "Practice Encounters"
+     - "Practice usage rate"
+
+5. **Access Admin Landing**
+   - Click Admin
+   - Should see Admin landing page with cards:
+     - Team (👥)
+     - Billing & Plan (💳)
+     - Security & Data (🔒)
+
+6. **Navigate Admin Sub-pages**
+   - Click "Manage" on Team card → goes to `/admin/team`
+   - Click "Manage" on Billing card → goes to `/admin/billing`
+   - Click "Manage" on Security card → goes to `/admin/security`
+
+#### 3. Verify Analytics Page (NPS Removed)
+
+1. **Login as Practice Admin**
+
+2. **Go to Analytics**
+
+3. **Verify No NPS Widget**
+   - Page should NOT show "How likely are you to recommend Codeloom..."
+   - Should only show metrics and export section
+
+4. **Verify Practice-Level Copy**
+   - Headers should say "Practice Encounters", not "Total Encounters"
+   - Should see "practice usage rate" and "practice avg" labels
+
+#### 4. Verify Personal Settings Page
+
+1. **Login as Any User**
+
+2. **Click Settings in Navigation**
+
+3. **Verify Settings Page**
+   - Should see "Settings" heading with "Manage your personal profile and preferences"
+   - Profile section showing:
+     - First Name (read-only)
+     - Last Name (read-only)
+     - Email (read-only)
+     - Role badge
+   - Preferences section (placeholder)
+   - Security section (placeholder)
+
+4. **Verify All Roles Can Access**
+   - Login as Provider → can access `/settings`
+   - Login as Biller → can access `/settings`
+   - Login as Practice Admin → can access `/settings`
+
+### Summary Checklist
+
+- [ ] Provider/Biller navigation shows only: Encounters, Training, Settings
+- [ ] Practice Admin navigation shows: Encounters, Training, Analytics, Admin, Settings
+- [ ] Non-admins redirected from `/analytics` to `/encounters`
+- [ ] Non-admins redirected from `/admin/*` to `/encounters`
+- [ ] Analytics page does NOT show NPS widget
+- [ ] Analytics page uses practice-level language
+- [ ] Admin landing page shows Team, Billing, Security cards
+- [ ] Personal Settings page accessible to all users
+- [ ] Role labels display correctly (Provider, Biller, Practice Admin)
+

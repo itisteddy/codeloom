@@ -24,7 +24,7 @@ practiceConfigRouter.get('/config', requireAuth, async (req: AuthenticatedReques
 practiceConfigRouter.patch(
   '/config',
   requireAuth,
-  requireRole(['admin', 'biller']),
+  requireRole(['practice_admin', 'platform_admin', 'biller']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const updates = req.body as {

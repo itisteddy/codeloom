@@ -11,9 +11,11 @@ const router = Router();
 // Apply auth middleware to all routes
 router.use(requireAuth);
 
-// Middleware to require admin role
+// Middleware to require admin role (practice_admin or platform_admin)
 function requireAdminRole(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  if (req.user!.role !== 'admin') {
+  const role = req.user!.role;
+  const isAdmin = role === 'practice_admin' || role === 'platform_admin';
+  if (!isAdmin) {
     return res.status(403).json({ error: 'Admin role required' });
   }
   next();
@@ -208,7 +210,7 @@ router.post('/team/:id/role', requireAdminRole, async (req: AuthenticatedRequest
     }
 
     // Prevent self-demotion from admin
-    if (userId === req.user!.id && role !== 'admin') {
+    if (userId === req.user!.id && role !== 'practice_admin' && role !== 'platform_admin') {
       return res.status(400).json({ error: 'Cannot demote yourself from admin role' });
     }
 

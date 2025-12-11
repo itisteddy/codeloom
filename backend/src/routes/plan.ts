@@ -50,7 +50,7 @@ planRouter.get('/practice/plan', requireAuth, async (req: AuthenticatedRequest, 
 planRouter.post(
   '/admin/practices/:id/plan',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { planKey } = req.body as { planKey?: string };

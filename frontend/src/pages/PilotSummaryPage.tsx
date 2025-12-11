@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getPilotSummary, exportPilotSummary, PilotSummary } from '../api/pilotSummary';
+import { isAdmin } from '../types/roles';
 
 export const PilotSummaryPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -13,7 +14,7 @@ export const PilotSummaryPage: React.FC = () => {
   const [toDate, setToDate] = useState('');
 
   useEffect(() => {
-    if (!token || user?.role !== 'admin') {
+    if (!token || !isAdmin(user?.role)) {
       return;
     }
 
@@ -53,11 +54,11 @@ export const PilotSummaryPage: React.FC = () => {
     }
   };
 
-  if (user?.role !== 'admin') {
+  if (!isAdmin(user?.role)) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          Access denied. This page is only available to administrators.
+          Access denied. This page is only available to Practice Admins.
         </div>
       </div>
     );

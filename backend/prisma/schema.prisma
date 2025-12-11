@@ -12,7 +12,8 @@ datasource db {
 enum UserRole {
   provider
   biller
-  admin
+  practice_admin
+  platform_admin
 }
 
 enum EncounterStatus {

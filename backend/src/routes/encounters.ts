@@ -446,7 +446,7 @@ encountersRouter.patch('/:id/codes', requireAuth, async (req: AuthenticatedReque
 });
 
 // PUT /api/encounters/:id/final-codes - update final codes using normalized tables
-encountersRouter.put('/:id/final-codes', requireAuth, requireRole(['biller', 'admin']), async (req: AuthenticatedRequest, res) => {
+encountersRouter.put('/:id/final-codes', requireAuth, requireRole(['biller', 'practice_admin', 'platform_admin']), async (req: AuthenticatedRequest, res) => {
   try {
     const encounterId = req.params.id;
     const { practiceId } = req.user!;
@@ -639,7 +639,7 @@ encountersRouter.post('/:id/suggest', requireAuth, async (req: AuthenticatedRequ
 });
 
 // GET /api/encounters/:id/audit - get audit trail (biller/admin only)
-encountersRouter.get('/:id/audit', requireAuth, requireRole(['biller', 'admin']), async (req: AuthenticatedRequest, res) => {
+encountersRouter.get('/:id/audit', requireAuth, requireRole(['biller', 'practice_admin', 'platform_admin']), async (req: AuthenticatedRequest, res) => {
   try {
     const encounterId = req.params.id;
     const { practiceId } = req.user!;

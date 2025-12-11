@@ -9,7 +9,7 @@ export const pilotSummaryRouter = Router();
 pilotSummaryRouter.get(
   '/summary',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { fromDate, toDate } = req.query;
@@ -43,7 +43,7 @@ pilotSummaryRouter.get(
 pilotSummaryRouter.get(
   '/summary/export',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const { fromDate, toDate } = req.query;

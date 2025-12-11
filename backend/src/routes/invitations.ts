@@ -10,7 +10,7 @@ export const invitationsRouter = Router();
 invitationsRouter.post(
   '/:id/invites',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const practiceId = req.params.id;
@@ -49,7 +49,7 @@ invitationsRouter.post(
 invitationsRouter.get(
   '/:id/invites',
   requireAuth,
-  requireRole(['admin']),
+  requireRole(['practice_admin', 'platform_admin']),
   async (req: AuthenticatedRequest, res) => {
     try {
       const practiceId = req.params.id;

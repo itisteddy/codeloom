@@ -7,7 +7,7 @@ import { ensureAnalyticsAllowed } from '../services/entitlementService';
 export const analyticsRouter = Router();
 
 // GET /api/analytics/summary (biller/admin only)
-analyticsRouter.get('/summary', requireAuth, requireRole(['biller', 'admin']), async (req: AuthenticatedRequest, res) => {
+analyticsRouter.get('/summary', requireAuth, requireRole(['practice_admin', 'platform_admin']), async (req: AuthenticatedRequest, res) => {
   try {
     // Check entitlement
     try {
