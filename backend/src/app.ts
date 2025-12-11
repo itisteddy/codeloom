@@ -38,27 +38,35 @@ const allowedOrigins = [
   'http://localhost:3000',
 ].filter(Boolean); // Remove any undefined/null values
 
-// Log allowed origins for debugging
-console.log('CORS allowed origins:', allowedOrigins);
+// Log allowed origins and env for debugging
+console.log('CORS config:', {
+  allowedOrigins,
+  isDev: appConfig.isDev,
+  appEnv: appConfig.appEnv,
+  frontendUrl: appConfig.frontendUrl,
+});
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log('CORS check for origin:', origin, 'isDev:', appConfig.isDev);
+      
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
+        console.log('CORS: Origin allowed via allowedOrigins list');
         return callback(null, true);
       }
       
       // In development, allow all origins
       if (appConfig.isDev) {
+        console.log('CORS: Origin allowed via isDev');
         return callback(null, true);
       }
       
       // For production, reject with false instead of throwing error
-      // This returns proper CORS headers instead of crashing
       console.warn(`CORS blocked request from origin: ${origin}`);
       return callback(null, false);
     },
@@ -90,6 +98,12 @@ app.use('/api/invite', inviteAcceptRouter);
 app.use('/api/me', meRouter);
 app.use('/api/dev', devRouter);
 app.use('/health', healthRouter);
+
+// Global error handler
+app.use((err: Error, req: any, res: any, next: any) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 export default app;
 

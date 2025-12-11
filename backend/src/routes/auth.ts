@@ -10,11 +10,12 @@ export const authRouter = Router();
 
 // POST /api/auth/login
 authRouter.post('/login', async (req, res) => {
-  const { email, password } = req.body as { email?: string; password?: string };
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
 
     const user = await prisma.user.findFirst({
       where: { email },
@@ -23,18 +24,18 @@ authRouter.post('/login', async (req, res) => {
 
     if (!user) {
       // Log failed login attempt (no user found)
-      // Note: We can't log practiceId since user doesn't exist
       try {
         await logAuditEvent({
-          practiceId: 'unknown', // Placeholder for failed login
+          practiceId: 'unknown',
           encounterId: 'system',
           userId: 'unknown',
-          userRole: 'provider', // Placeholder
+          userRole: 'provider',
           action: AuditAction.ENCOUNTER_UPDATED,
           payload: { type: 'SECURITY_EVENT', event: 'FAILED_LOGIN' },
         });
-      } catch (err) {
+      } catch (auditErr) {
         // Don't fail request if audit logging fails
+        console.error('Audit log error:', auditErr);
       }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -51,31 +52,36 @@ authRouter.post('/login', async (req, res) => {
           action: AuditAction.ENCOUNTER_UPDATED,
           payload: { type: 'SECURITY_EVENT', event: 'FAILED_LOGIN' },
         });
-      } catch (err) {
+      } catch (auditErr) {
         // Don't fail request if audit logging fails
+        console.error('Audit log error:', auditErr);
       }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-  const token = signAuthToken({
-    sub: user.id,
-    practiceId: user.practiceId,
-    role: user.role,
-  });
+    const token = signAuthToken({
+      sub: user.id,
+      practiceId: user.practiceId,
+      role: user.role,
+    });
 
-  const { passwordHash, ...safeUser } = user;
+    const { passwordHash: _, ...safeUser } = user;
 
-  return res.json({
-    token,
-    user: {
-      id: safeUser.id,
-      practiceId: safeUser.practiceId,
-      role: safeUser.role,
-      email: safeUser.email,
-      firstName: safeUser.firstName,
-      lastName: safeUser.lastName,
-    },
-  });
+    return res.json({
+      token,
+      user: {
+        id: safeUser.id,
+        practiceId: safeUser.practiceId,
+        role: safeUser.role,
+        email: safeUser.email,
+        firstName: safeUser.firstName,
+        lastName: safeUser.lastName,
+      },
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Login failed' });
+  }
 });
 
 // GET /api/auth/me
