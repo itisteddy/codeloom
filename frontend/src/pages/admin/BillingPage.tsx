@@ -55,12 +55,42 @@ export const BillingPage: React.FC = () => {
     return null;
   }
 
-  const usagePercent = billing.monthlyEncounterLimit
-    ? Math.min(100, (billing.encountersThisMonth / billing.monthlyEncounterLimit) * 100)
-    : 0;
+  // Calculate usage percentage
+  const encounterLimit = billing.includedLimits?.maxEncountersPerMonth || billing.monthlyEncounterLimit || 0;
+  const encountersUsed = billing.currentUsage?.encountersWithAiSuggestions || billing.encountersThisMonth || 0;
+  const usagePercent = encounterLimit > 0 ? Math.min(100, (encountersUsed / encounterLimit) * 100) : 0;
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const getPlanTypeLabel = (planType: string) => {
+    switch (planType) {
+      case 'starter':
+        return 'Starter';
+      case 'growth':
+        return 'Growth';
+      case 'enterprise':
+        return 'Enterprise';
+      default:
+        return planType;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="success">Active</Badge>;
+      case 'trialing':
+        return <Badge variant="info">Trial</Badge>;
+      case 'past_due':
+        return <Badge variant="warning">Past Due</Badge>;
+      case 'canceled':
+        return <Badge variant="danger">Canceled</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
   };
 
   return (
@@ -68,23 +98,32 @@ export const BillingPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-semibold text-brand-ink">Billing & Plan</h1>
         <p className="mt-1 text-sm text-semantic-muted">
-          View your current plan and usage details.
+          View your current plan, usage, and renewal information.
         </p>
       </div>
 
       {/* Plan Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Current Plan</CardTitle>
-          <CardDescription>
-            Active since {formatDate(billing.planSince)}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Current Plan</CardTitle>
+              <CardDescription>
+                Active since {formatDate(billing.planSince)}
+              </CardDescription>
+            </div>
+            {getStatusBadge(billing.subscriptionStatus)}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-semibold text-brand-ink">{billing.planName}</p>
-              <p className="text-sm text-semantic-muted">Plan key: {billing.planKey}</p>
+              <p className="text-2xl font-semibold text-brand-ink">
+                {getPlanTypeLabel(billing.planType)}
+              </p>
+              <p className="text-sm text-semantic-muted">
+                {billing.billingCycle === 'annual' ? 'Annual billing' : 'Monthly billing'}
+              </p>
             </div>
             <Button
               variant="secondary"
@@ -93,32 +132,42 @@ export const BillingPage: React.FC = () => {
                 window.location.href = 'mailto:support@codeloom.ai?subject=Plan%20Upgrade%20Request';
               }}
             >
-              Contact us to upgrade
+              Contact us to change plan
             </Button>
           </div>
+
+          {/* Renewal Date */}
+          {billing.renewalDate && (
+            <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
+              <p className="text-xs font-medium uppercase text-semantic-muted">Renewal Date</p>
+              <p className="text-lg font-semibold text-brand-ink">{formatDate(billing.renewalDate)}</p>
+            </div>
+          )}
 
           {/* Features */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
               <p className="text-xs font-medium uppercase text-semantic-muted">Max Providers</p>
-              <p className="text-lg font-semibold text-brand-ink">{billing.maxProviders}</p>
+              <p className="text-lg font-semibold text-brand-ink">
+                {billing.includedLimits?.maxProviders || billing.maxProviders || 'Unlimited'}
+              </p>
             </div>
             <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
               <p className="text-xs font-medium uppercase text-semantic-muted">Training</p>
-              <Badge variant={billing.trainingEnabled ? 'success' : 'default'}>
-                {billing.trainingEnabled ? 'Enabled' : 'Disabled'}
+              <Badge variant={billing.features?.trainingEnabled || billing.trainingEnabled ? 'success' : 'default'}>
+                {billing.features?.trainingEnabled || billing.trainingEnabled ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
             <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
               <p className="text-xs font-medium uppercase text-semantic-muted">Analytics</p>
-              <Badge variant={billing.analyticsEnabled ? 'success' : 'default'}>
-                {billing.analyticsEnabled ? 'Enabled' : 'Disabled'}
+              <Badge variant={billing.features?.analyticsEnabled || billing.analyticsEnabled ? 'success' : 'default'}>
+                {billing.features?.analyticsEnabled || billing.analyticsEnabled ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
             <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
               <p className="text-xs font-medium uppercase text-semantic-muted">Exports</p>
-              <Badge variant={billing.exportsEnabled ? 'success' : 'default'}>
-                {billing.exportsEnabled ? 'Enabled' : 'Disabled'}
+              <Badge variant={billing.features?.exportsEnabled || billing.exportsEnabled ? 'success' : 'default'}>
+                {billing.features?.exportsEnabled || billing.exportsEnabled ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
           </div>
@@ -128,50 +177,93 @@ export const BillingPage: React.FC = () => {
       {/* Usage Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Usage</CardTitle>
-          <CardDescription>Current billing period usage</CardDescription>
+          <CardTitle>Current Period Usage</CardTitle>
+          <CardDescription>
+            {billing.currentUsage ? (
+              <>
+                {formatDate(billing.currentUsage.periodStart)} – {formatDate(billing.currentUsage.periodEnd)}
+              </>
+            ) : (
+              'Current billing period'
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Encounters Usage */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-brand-ink">Encounters</span>
+              <span className="font-medium text-brand-ink">Encounters with AI Suggestions</span>
               <span className="text-semantic-muted">
-                {billing.encountersThisMonth} / {billing.monthlyEncounterLimit}
+                {encountersUsed} / {encounterLimit || '∞'}
               </span>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  usagePercent >= 90
-                    ? 'bg-red-500'
-                    : usagePercent >= 70
-                    ? 'bg-amber-500'
-                    : 'bg-brand-teal'
-                }`}
-                style={{ width: `${usagePercent}%` }}
-              />
-            </div>
-            <p className="text-xs text-semantic-muted">
-              {Math.round(usagePercent)}% of monthly limit used
-            </p>
+            {encounterLimit > 0 && (
+              <>
+                <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      usagePercent >= 90
+                        ? 'bg-red-500'
+                        : usagePercent >= 70
+                        ? 'bg-amber-500'
+                        : 'bg-brand-teal'
+                    }`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+                <p className="text-xs text-semantic-muted">
+                  {Math.round(usagePercent)}% of monthly limit used
+                </p>
+              </>
+            )}
           </div>
 
-          {/* AI Suggest Calls */}
-          <div className="rounded-lg border border-semantic-border bg-slate-50 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-brand-ink">AI Suggestion Calls</p>
-                <p className="text-xs text-semantic-muted">This billing period</p>
+          {/* Detailed Usage Stats */}
+          {billing.currentUsage && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
+                <p className="text-xs font-medium uppercase text-semantic-muted">Encounters Created</p>
+                <p className="text-lg font-semibold text-brand-ink">{billing.currentUsage.encountersCreated}</p>
               </div>
-              <p className="text-2xl font-semibold text-brand-ink">
-                {billing.aiSuggestCallsThisMonth}
+              <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
+                <p className="text-xs font-medium uppercase text-semantic-muted">Finalized</p>
+                <p className="text-lg font-semibold text-brand-ink">{billing.currentUsage.encountersFinalized}</p>
+              </div>
+              <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
+                <p className="text-xs font-medium uppercase text-semantic-muted">AI Calls</p>
+                <p className="text-lg font-semibold text-brand-ink">{billing.currentUsage.aiSuggestCalls}</p>
+              </div>
+              <div className="rounded-lg border border-semantic-border bg-slate-50 p-3">
+                <p className="text-xs font-medium uppercase text-semantic-muted">Training Attempts</p>
+                <p className="text-lg font-semibold text-brand-ink">{billing.currentUsage.trainingAttempts}</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Contact Section */}
+      <Card>
+        <CardContent className="py-6">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
+            <div>
+              <p className="font-medium text-brand-ink">Need to change your plan?</p>
+              <p className="text-sm text-semantic-muted">
+                Contact us to upgrade, downgrade, or discuss custom options.
               </p>
             </div>
+            <Button
+              variant="primary"
+              className="mt-4 sm:mt-0"
+              onClick={() => {
+                window.location.href = 'mailto:support@codeloom.ai?subject=Plan%20Inquiry';
+              }}
+            >
+              Contact Support
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 };
-

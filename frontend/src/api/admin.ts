@@ -23,21 +23,61 @@ async function apiCall<T>(
 }
 
 // Billing types
-export interface BillingInfo {
-  planKey: string;
-  planName: string;
-  planSince: string;
-  monthlyEncounterLimit: number;
-  encountersThisMonth: number;
-  aiSuggestCallsThisMonth: number;
-  maxProviders: number;
+export type PlanType = 'starter' | 'growth' | 'enterprise';
+export type BillingCycle = 'monthly' | 'annual';
+export type SubscriptionStatus = 'active' | 'trialing' | 'canceled' | 'past_due';
+
+export interface IncludedLimits {
+  maxEncountersPerMonth?: number;
+  maxProviders?: number;
+  maxBillers?: number;
+}
+
+export interface CurrentUsage {
+  periodStart: string;
+  periodEnd: string;
+  encountersCreated: number;
+  encountersWithAiSuggestions: number;
+  encountersFinalized: number;
+  aiSuggestCalls: number;
+  trainingAttempts: number;
+}
+
+export interface BillingFeatures {
   trainingEnabled: boolean;
   analyticsEnabled: boolean;
   exportsEnabled: boolean;
 }
 
+export interface BillingInfo {
+  // Subscription info
+  planType: PlanType;
+  billingCycle: BillingCycle;
+  subscriptionStatus: SubscriptionStatus;
+  renewalDate: string | null;
+  
+  // Legacy plan info
+  planKey: string;
+  planName: string;
+  planSince: string;
+  
+  // Limits and usage
+  includedLimits: IncludedLimits;
+  currentUsage: CurrentUsage;
+  features: BillingFeatures;
+  
+  // Legacy fields for backwards compatibility
+  monthlyEncounterLimit?: number;
+  encountersThisMonth?: number;
+  aiSuggestCallsThisMonth?: number;
+  maxProviders?: number;
+  trainingEnabled?: boolean;
+  analyticsEnabled?: boolean;
+  exportsEnabled?: boolean;
+}
+
 // Team types
-export type UserRole = 'provider' | 'biller' | 'admin';
+export type UserRole = 'provider' | 'biller' | 'practice_admin' | 'platform_admin';
 
 export interface TeamMember {
   id: string;

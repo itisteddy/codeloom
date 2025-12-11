@@ -285,3 +285,78 @@ This document provides step-by-step instructions for manually verifying features
 - [ ] Personal Settings page accessible to all users
 - [ ] Role labels display correctly (Provider, Biller, Practice Admin)
 
+---
+
+## Sub-phase B – Tenant Model & Admin Team/Billing Skeleton
+
+### Prerequisites
+
+- Deployed frontend and backend with Sub-phase B changes
+- Practice Admin user account
+
+### Verification Steps
+
+#### 1. Verify Admin Billing Page
+
+1. **Login as Practice Admin**
+   - Go to login page and login with a practice_admin user
+
+2. **Navigate to Admin → Billing & Plan**
+   - Click "Admin" in sidebar
+   - Click "Manage" on Billing & Plan card
+
+3. **Verify Plan Information**
+   - Should see plan type (Starter/Growth/Enterprise)
+   - Should see billing cycle (Monthly/Annual)
+   - Should see status badge (Active/Trial/etc.)
+   - Should see renewal date if applicable
+
+4. **Verify Usage Statistics**
+   - Should see current period dates
+   - Should see encounters with AI suggestions count
+   - Should see progress bar with color coding:
+     - Green: < 70% usage
+     - Amber: 70-90% usage
+     - Red: > 90% usage
+   - Should see detailed stats:
+     - Encounters Created
+     - Encounters Finalized
+     - AI Calls
+     - Training Attempts
+
+5. **Verify Contact CTA**
+   - "Contact us to change plan" button should open email
+   - "Contact Support" button should open email
+
+#### 2. Verify Admin Team Page
+
+1. **Navigate to Admin → Team**
+
+2. **Verify User List**
+   - Should see all users in practice
+   - Should see columns: Name, Email, Role, Status, Created
+   - Role badges should be color-coded:
+     - Practice Admin: Warning (amber)
+     - Biller: Info (teal)
+     - Provider: Default (gray)
+
+3. **Verify Role Change**
+   - Select a different role from dropdown
+   - Confirm change is saved
+
+4. **Verify Invite Form**
+   - Click "Invite User"
+   - Fill in email and select role
+   - Submit and verify invite appears in pending list
+
+### Summary Checklist
+
+- [ ] Admin Billing page shows plan type and billing cycle
+- [ ] Admin Billing page shows subscription status badge
+- [ ] Admin Billing page shows current period usage stats
+- [ ] Usage progress bar shows correct percentage and color
+- [ ] Contact buttons open email with correct subject
+- [ ] Team page shows all users with correct role badges
+- [ ] Role change works from dropdown
+- [ ] Invite form creates pending invite
+

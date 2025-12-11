@@ -28,6 +28,17 @@ router.get('/billing', requireAdminRole, async (req: AuthenticatedRequest, res: 
 
     const practice = await prisma.practice.findUnique({
       where: { id: practiceId },
+      include: {
+        organization: {
+          include: {
+            subscriptions: {
+              where: { status: { not: 'canceled' } },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
     });
 
     if (!practice) {
@@ -58,20 +69,50 @@ router.get('/billing', requireAdminRole, async (req: AuthenticatedRequest, res: 
       },
     });
 
+    // Check if there's a subscription, otherwise fall back to legacy planKey
+    const subscription = practice.organization?.subscriptions?.[0];
     const planConfig = plans[practice.planKey as keyof typeof plans] || plans.plan_a;
 
-    res.json({
+    // Build response with subscription info if available
+    const response: any = {
+      // Subscription info (new model)
+      planType: subscription?.planType || 'starter',
+      billingCycle: subscription?.billingCycle || 'monthly',
+      subscriptionStatus: subscription?.status || 'active',
+      renewalDate: subscription?.renewalDate?.toISOString() || null,
+      
+      // Legacy plan info (for backwards compatibility)
       planKey: practice.planKey,
       planName: planConfig.name,
       planSince: practice.planSince,
-      monthlyEncounterLimit: planConfig.maxEncountersPerMonth,
-      encountersThisMonth: usagePeriod?.encountersCreated ?? encounterCount,
-      aiSuggestCallsThisMonth: usagePeriod?.aiSuggestCalls ?? 0,
-      maxProviders: planConfig.maxProviders,
-      trainingEnabled: planConfig.trainingEnabled,
-      analyticsEnabled: planConfig.analyticsEnabled,
-      exportsEnabled: planConfig.exportsEnabled,
-    });
+      
+      // Limits
+      includedLimits: subscription?.includedLimits || {
+        maxEncountersPerMonth: planConfig.maxEncountersPerMonth,
+        maxProviders: planConfig.maxProviders,
+        maxBillers: null, // Not currently part of plans; will be null until subscription model is used
+      },
+      
+      // Current usage
+      currentUsage: {
+        periodStart: usagePeriod?.periodStart?.toISOString() || monthStart.toISOString(),
+        periodEnd: usagePeriod?.periodEnd?.toISOString() || monthEnd.toISOString(),
+        encountersCreated: usagePeriod?.encountersCreated ?? encounterCount,
+        encountersWithAiSuggestions: usagePeriod?.encountersWithAiSuggestions ?? 0,
+        encountersFinalized: usagePeriod?.encountersFinalized ?? 0,
+        aiSuggestCalls: usagePeriod?.aiSuggestCalls ?? 0,
+        trainingAttempts: usagePeriod?.trainingAttempts ?? 0,
+      },
+      
+      // Feature flags
+      features: {
+        trainingEnabled: planConfig.trainingEnabled,
+        analyticsEnabled: planConfig.analyticsEnabled,
+        exportsEnabled: planConfig.exportsEnabled,
+      },
+    };
+
+    res.json(response);
   } catch (err) {
     console.error('Error fetching billing info:', err);
     res.status(500).json({ error: 'Failed to fetch billing info' });

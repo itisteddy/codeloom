@@ -123,7 +123,8 @@ export const TeamPage: React.FC = () => {
 
   const getRoleBadgeVariant = (role: UserRole): 'info' | 'default' | 'warning' => {
     switch (role) {
-      case 'admin':
+      case 'practice_admin':
+      case 'platform_admin':
         return 'warning';
       case 'biller':
         return 'info';
