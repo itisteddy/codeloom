@@ -78,9 +78,16 @@ authRouter.post('/login', async (req, res) => {
         lastName: safeUser.lastName,
       },
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    return res.status(500).json({ error: 'Login failed' });
+  } catch (err: any) {
+    console.error('Login error:', {
+      message: err.message,
+      stack: err.stack,
+      name: err.name,
+    });
+    return res.status(500).json({ 
+      error: 'Login failed',
+      details: process.env.NODE_ENV !== 'production' ? err.message : undefined,
+    });
   }
 });
 
