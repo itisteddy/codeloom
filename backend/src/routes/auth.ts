@@ -19,7 +19,13 @@ authRouter.post('/login', async (req, res) => {
 
     const user = await prisma.user.findFirst({
       where: { email },
-      include: { practice: true },
+      include: { 
+        practice: {
+          include: {
+            organization: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -74,7 +80,7 @@ authRouter.post('/login', async (req, res) => {
       token,
       user: {
         id: safeUser.id,
-        practiceId: safeUser.practiceId,
+        practiceId: safeUser.practiceId || null,
         practiceName: practice?.name || null,
         role: safeUser.role,
         email: safeUser.email,
