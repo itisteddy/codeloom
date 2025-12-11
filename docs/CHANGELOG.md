@@ -2,6 +2,68 @@
 
 All notable changes to the Codeloom project will be documented in this file.
 
+---
+
+## Phase 1 – Domain & Tenancy Cleanup
+
+### Backend Changes
+
+- **Prisma Schema Updates**:
+  - Added `UserStatus` enum (ACTIVE, INVITED, INACTIVE)
+  - Added `PracticeUser` join table model for user-practice memberships with roles
+  - Made `Practice.orgId` required (was optional)
+  - Added `Subscription.startDate` field
+  - Added `UsagePeriod.aiCalls` field and unique constraint on (practiceId, periodStart)
+  - Updated `User` model to include `practiceUsers` relation
+  - Updated `Practice` model to include `practiceUsers` relation
+  - User email is now globally unique (not just per-practice)
+
+- **Tenancy Helpers** (`src/utils/tenancy.ts`):
+  - `getCurrentUser(req)`: Returns authenticated user with relations
+  - `getCurrentPractice(req)`: Returns current practice for user
+  - `getCurrentOrg(req)`: Returns current organization for user
+  - `getCurrentPracticeId(req)`: Returns practice ID helper
+  - `getCurrentOrgId(req)`: Returns organization ID helper
+  - Centralizes tenancy logic for easier multi-practice migration
+
+- **API Updates**:
+  - Updated `/api/me` to use tenancy helpers and return `practiceName`
+  - Updated `/api/auth/login` to include `practiceName` in response
+
+- **Seed Script Refactor** (`prisma/seed.ts`):
+  - Created `createSampleTenant()` helper function
+  - Creates Organization → Practice → Subscription → Users → PracticeUser chain
+  - Creates Platform Admin user (`platform-admin@codeloom.app`)
+  - All seed data now uses proper tenancy model
+  - Idempotent: reuses existing entities if they exist
+
+- **Migration** (`20251211_phase1_tenancy_cleanup`):
+  - Creates `PracticeUser` table and `UserStatus` enum
+  - Handles existing data gracefully (creates default org for practices without orgId)
+  - Updates constraints and indexes
+
+### Frontend Changes
+
+- **Removed Hardcoded Practice Names**:
+  - `AppShell.tsx`: Removed hardcoded "Sample Family Practice", now uses `user.practiceName` from backend
+  - Practice name now comes from `/api/me` endpoint
+
+- **Auth Context Updates**:
+  - Added `practiceName` field to `AuthUser` interface
+  - Login flow fetches full user data from `/api/me` to get practice name
+  - Practice name displayed in UI comes from backend, not hardcoded
+
+### Documentation
+
+- **New File**: `docs/ARCHITECTURE-TENANCY.md`
+  - Describes Organization, Practice, User, PracticeUser, Subscription, Usage models
+  - Explains relationships and data flow
+  - Documents backend helpers
+  - Describes seed data structure
+  - Notes migration path for future phases
+
+---
+
 ## Phase 2 – HIPAA-ish Data Handling & Visibility
 
 ### Backend Changes

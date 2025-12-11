@@ -1,181 +1,418 @@
-import { PrismaClient, UserRole, TrainingDifficulty, AuditAction } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, TrainingDifficulty, AuditAction, PlanType, BillingCycle, SubscriptionStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  // Create or get test practice
+/**
+ * Creates a sample tenant with Organization, Practice, Subscription, and Users
+ * This is idempotent - will reuse existing entities if they exist
+ */
+async function createSampleTenant() {
+  const passwordHash = await bcrypt.hash('changeme123', 10);
+
+  // 1. Create or get Organization
+  let organization = await prisma.organization.findFirst({
+    where: { name: 'Sample Family Practice' },
+  });
+
+  if (!organization) {
+    organization = await prisma.organization.create({
+      data: {
+        name: 'Sample Family Practice',
+        billingContactName: 'Sample Owner',
+        billingContactEmail: 'owner@example.com',
+      },
+    });
+  }
+
+  // 2. Create or get Practice
+  // First, try to find "Sample Family Practice"
   let practice = await prisma.practice.findFirst({
-    where: { name: 'Codeloom Test Practice' },
+    where: { name: 'Sample Family Practice' },
   });
 
   if (!practice) {
-    practice = await prisma.practice.create({
+    // If "Sample Family Practice" doesn't exist, check for "Codeloom Test Practice" (old name)
+    const oldPractice = await prisma.practice.findFirst({
+      where: { name: 'Codeloom Test Practice' },
+    });
+
+    if (oldPractice) {
+      // Rename old practice to new name and link to organization
+      practice = await prisma.practice.update({
+        where: { id: oldPractice.id },
+        data: {
+          name: 'Sample Family Practice',
+          orgId: organization.id,
+        },
+      });
+    } else {
+      // Create new practice
+      practice = await prisma.practice.create({
+        data: {
+          name: 'Sample Family Practice',
+          orgId: organization.id,
+          specialty: 'primary_care',
+          timeZone: 'America/Chicago',
+        },
+      });
+    }
+  } else if (!practice.orgId) {
+    // Update existing practice to link to organization
+    practice = await prisma.practice.update({
+      where: { id: practice.id },
+      data: { orgId: organization.id },
+    });
+  }
+
+  // 3. Create or get Subscription
+  let subscription = await prisma.subscription.findFirst({
+    where: { orgId: organization.id },
+  });
+
+  if (!subscription) {
+    const now = new Date();
+    const renewalDate = new Date(now);
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+
+    subscription = await prisma.subscription.create({
       data: {
-        name: 'Codeloom Test Practice',
+        orgId: organization.id,
+        planType: PlanType.starter,
+        billingCycle: BillingCycle.monthly,
+        status: SubscriptionStatus.active,
+        startDate: now,
+        renewalDate: renewalDate,
+        includedLimits: {
+          maxEncountersPerMonth: 200,
+          maxProviders: 3,
+          maxBillers: 2,
+        },
       },
     });
   }
 
+  // 4. Create Users
+  const usersToCreate = [
+    {
+      email: 'provider@example.com',
+      firstName: 'Test',
+      lastName: 'Provider',
+      role: UserRole.provider,
+    },
+    {
+      email: 'biller@example.com',
+      firstName: 'Test',
+      lastName: 'Biller',
+      role: UserRole.biller,
+    },
+    {
+      email: 'admin@example.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      role: UserRole.practice_admin,
+    },
+  ];
+
+  const createdUsers = [];
+
+  for (const userData of usersToCreate) {
+    // Check if user exists by email
+    let user = await prisma.user.findFirst({
+      where: { email: userData.email },
+    });
+
+    if (!user) {
+      // Create user with practiceId for backward compatibility
+      user = await prisma.user.create({
+        data: {
+          practiceId: practice.id,
+          email: userData.email,
+          passwordHash,
+          role: userData.role,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+        },
+      });
+    } else {
+      // Update existing user to link to the new practice (migrate from old practice)
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          practiceId: practice.id,
+          role: userData.role, // Update role to match seed data
+        },
+      });
+    }
+
+    // 5. Create PracticeUser join record
+    const practiceUser = await prisma.practiceUser.upsert({
+      where: {
+        practiceId_userId: {
+          practiceId: practice.id,
+          userId: user.id,
+        },
+      },
+      create: {
+        practiceId: practice.id,
+        userId: user.id,
+        role: userData.role,
+        status: UserStatus.ACTIVE,
+      },
+      update: {
+        role: userData.role,
+        status: UserStatus.ACTIVE,
+      },
+    });
+
+    createdUsers.push({ user, practiceUser });
+  }
+
+  return {
+    organization,
+    practice,
+    subscription,
+    users: createdUsers,
+  };
+}
+
+/**
+ * Creates a Platform Admin user (not tied to any practice)
+ */
+async function createPlatformAdmin() {
   const passwordHash = await bcrypt.hash('changeme123', 10);
 
-  // Create or get provider
-  let provider = await prisma.user.findFirst({
-    where: { email: 'provider@example.com', practiceId: practice.id },
+  // Check if platform admin exists
+  let platformAdmin = await prisma.user.findFirst({
+    where: { email: 'platform-admin@codeloom.app' },
   });
 
-  if (!provider) {
-    provider = await prisma.user.create({
+  if (!platformAdmin) {
+    // Create a dummy practice for backward compatibility (platform admin doesn't need it)
+    // We'll use the sample practice as a placeholder
+    const samplePractice = await prisma.practice.findFirst({
+      where: { name: 'Sample Family Practice' },
+    });
+
+    if (!samplePractice) {
+      throw new Error('Sample practice must exist before creating platform admin');
+    }
+
+    platformAdmin = await prisma.user.create({
       data: {
-        practiceId: practice.id,
-        email: 'provider@example.com',
+        practiceId: samplePractice.id, // Placeholder for backward compatibility
+        email: 'platform-admin@codeloom.app',
         passwordHash,
-        role: UserRole.provider,
-        firstName: 'Test',
-        lastName: 'Provider',
+        role: UserRole.platform_admin,
+        firstName: 'Platform',
+        lastName: 'Admin',
       },
     });
   }
 
-  // Create or get biller
-  let biller = await prisma.user.findFirst({
-    where: { email: 'biller@example.com', practiceId: practice.id },
+  return platformAdmin;
+}
+
+async function main() {
+  // Create sample tenant
+  const sampleTenant = await createSampleTenant();
+  console.log('Created sample tenant:', {
+    organization: { id: sampleTenant.organization.id, name: sampleTenant.organization.name },
+    practice: { id: sampleTenant.practice.id, name: sampleTenant.practice.name },
+    subscription: { id: sampleTenant.subscription.id, planType: sampleTenant.subscription.planType },
+    users: sampleTenant.users.map(({ user }) => ({
+      email: user.email,
+      role: user.role,
+    })),
   });
 
-  if (!biller) {
-    biller = await prisma.user.create({
-      data: {
-        practiceId: practice.id,
-        email: 'biller@example.com',
-        passwordHash,
-        role: UserRole.biller,
-        firstName: 'Test',
-        lastName: 'Biller',
-      },
-    });
-  }
+  // Create platform admin
+  const platformAdmin = await createPlatformAdmin();
+  console.log('Created platform admin:', {
+    email: platformAdmin.email,
+    role: platformAdmin.role,
+  });
 
-  // Create Pilot Practice Alpha
+  // Create pilot practice (for backward compatibility with existing seed data)
   let pilotPractice = await prisma.practice.findFirst({
     where: { name: 'Pilot Practice Alpha' },
   });
 
   if (!pilotPractice) {
+    // Create org for pilot practice
+    const pilotOrg = await prisma.organization.create({
+      data: {
+        name: 'Pilot Practice Alpha Organization',
+        billingContactName: 'Pilot Owner',
+        billingContactEmail: 'pilot@example.com',
+      },
+    });
+
     pilotPractice = await prisma.practice.create({
       data: {
         name: 'Pilot Practice Alpha',
+        orgId: pilotOrg.id,
+        specialty: 'primary_care',
+        timeZone: 'America/Chicago',
       },
     });
-  }
 
-  // Create pilot provider
-  let pilotProvider = await prisma.user.findFirst({
-    where: { email: 'alpha.provider@demo.com', practiceId: pilotPractice.id },
-  });
+    // Create subscription for pilot
+    const now = new Date();
+    const renewalDate = new Date(now);
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
 
-  if (!pilotProvider) {
-    pilotProvider = await prisma.user.create({
+    await prisma.subscription.create({
       data: {
-        practiceId: pilotPractice.id,
-        email: 'alpha.provider@demo.com',
-        passwordHash,
-        role: UserRole.provider,
-        firstName: 'Alpha',
-        lastName: 'Provider',
+        orgId: pilotOrg.id,
+        planType: PlanType.growth,
+        billingCycle: BillingCycle.monthly,
+        status: SubscriptionStatus.active,
+        startDate: now,
+        renewalDate: renewalDate,
       },
     });
   }
 
-  // Create pilot biller
-  let pilotBiller = await prisma.user.findFirst({
-    where: { email: 'alpha.biller@demo.com', practiceId: pilotPractice.id },
-  });
+  // Create pilot users
+  const passwordHash = await bcrypt.hash('changeme123', 10);
 
-  if (!pilotBiller) {
-    pilotBiller = await prisma.user.create({
-      data: {
+  const pilotUsers = [
+    {
+      email: 'alpha.provider@demo.com',
+      firstName: 'Alpha',
+      lastName: 'Provider',
+      role: UserRole.provider,
+    },
+    {
+      email: 'alpha.biller@demo.com',
+      firstName: 'Alpha',
+      lastName: 'Biller',
+      role: UserRole.biller,
+    },
+  ];
+
+  for (const userData of pilotUsers) {
+    let user = await prisma.user.findFirst({
+      where: { email: userData.email },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          practiceId: pilotPractice.id,
+          email: userData.email,
+          passwordHash,
+          role: userData.role,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+        },
+      });
+    }
+
+    // Create PracticeUser join
+    await prisma.practiceUser.upsert({
+      where: {
+        practiceId_userId: {
+          practiceId: pilotPractice.id,
+          userId: user.id,
+        },
+      },
+      create: {
         practiceId: pilotPractice.id,
-        email: 'alpha.biller@demo.com',
-        passwordHash,
-        role: UserRole.biller,
-        firstName: 'Alpha',
-        lastName: 'Biller',
+        userId: user.id,
+        role: userData.role,
+        status: UserStatus.ACTIVE,
+      },
+      update: {
+        role: userData.role,
+        status: UserStatus.ACTIVE,
       },
     });
   }
 
-  // Create pilot encounters
+  // Create pilot encounters (idempotent)
   const existingEncounters = await prisma.encounter.findMany({
     where: { practiceId: pilotPractice.id },
     take: 1,
   });
 
   if (existingEncounters.length === 0) {
-    // Draft encounter
-    await prisma.encounter.create({
-      data: {
-        practiceId: pilotPractice.id,
-        providerId: pilotProvider.id,
-        patientPseudoId: 'pilot_001',
-        encounterDate: new Date('2025-12-01'),
-        visitType: 'office_established',
-        specialty: 'primary_care',
-        noteText: 'Patient presents for routine follow-up. Blood pressure well controlled. Continue current medications.',
-        status: 'draft',
-      },
+    const pilotProvider = await prisma.user.findFirst({
+      where: { email: 'alpha.provider@demo.com' },
     });
 
-    // AI suggested encounter
-    await prisma.encounter.create({
-      data: {
-        practiceId: pilotPractice.id,
-        providerId: pilotProvider.id,
-        patientPseudoId: 'pilot_002',
-        encounterDate: new Date('2025-12-02'),
-        visitType: 'office_established',
-        specialty: 'primary_care',
-        noteText: '55-year-old male with type 2 diabetes and hypertension. Review of systems negative. Physical exam unremarkable. Plan: Continue metformin and lisinopril. Check A1C in 3 months.',
-        status: 'ai_suggested',
-        aiEmSuggested: '99214',
-        aiEmConfidence: 0.85,
-        aiDiagnosisSuggestionsJson: [
-          { code: 'E11.9', description: 'Type 2 diabetes', confidence: 0.9 },
-          { code: 'I10', description: 'Hypertension', confidence: 0.88 },
-        ],
-      },
+    const pilotBiller = await prisma.user.findFirst({
+      where: { email: 'alpha.biller@demo.com' },
     });
 
-    // Finalized encounter
-    const finalizedEncounter = await prisma.encounter.create({
-      data: {
-        practiceId: pilotPractice.id,
-        providerId: pilotProvider.id,
-        patientPseudoId: 'pilot_003',
-        encounterDate: new Date('2025-12-03'),
-        visitType: 'office_established',
-        specialty: 'primary_care',
-        noteText: 'Annual wellness visit. Patient doing well. All screenings up to date.',
-        status: 'finalized',
-        finalEmCode: '99213',
-        finalEmCodeSource: 'biller',
-        finalDiagnosisJson: [{ code: 'Z00.00', description: 'Encounter for general adult medical examination', source: 'user' }],
-        finalizedByUserId: pilotBiller.id,
-        finalizedAt: new Date('2025-12-03'),
-      },
-    });
+    if (pilotProvider && pilotBiller) {
+      // Draft encounter
+      await prisma.encounter.create({
+        data: {
+          practiceId: pilotPractice.id,
+          providerId: pilotProvider.id,
+          patientPseudoId: 'pilot_001',
+          encounterDate: new Date('2025-12-01'),
+          visitType: 'office_established',
+          specialty: 'primary_care',
+          noteText: 'Patient presents for routine follow-up. Blood pressure well controlled. Continue current medications.',
+          status: 'draft',
+        },
+      });
 
-    // Create audit event for finalized encounter
-    await prisma.auditEvent.create({
-      data: {
-        practiceId: pilotPractice.id,
-        encounterId: finalizedEncounter.id,
-        userId: pilotBiller.id,
-        userRole: UserRole.biller,
-        action: AuditAction.USER_FINALIZED_CODES,
-        payload: { field: 'status', from: 'ai_suggested', to: 'finalized' },
-      },
-    });
+      // AI suggested encounter
+      await prisma.encounter.create({
+        data: {
+          practiceId: pilotPractice.id,
+          providerId: pilotProvider.id,
+          patientPseudoId: 'pilot_002',
+          encounterDate: new Date('2025-12-02'),
+          visitType: 'office_established',
+          specialty: 'primary_care',
+          noteText: '55-year-old male with type 2 diabetes and hypertension. Review of systems negative. Physical exam unremarkable. Plan: Continue metformin and lisinopril. Check A1C in 3 months.',
+          status: 'ai_suggested',
+          aiEmSuggested: '99214',
+          aiEmConfidence: 0.85,
+          aiDiagnosisSuggestionsJson: [
+            { code: 'E11.9', description: 'Type 2 diabetes', confidence: 0.9 },
+            { code: 'I10', description: 'Hypertension', confidence: 0.88 },
+          ],
+        },
+      });
+
+      // Finalized encounter
+      const finalizedEncounter = await prisma.encounter.create({
+        data: {
+          practiceId: pilotPractice.id,
+          providerId: pilotProvider.id,
+          patientPseudoId: 'pilot_003',
+          encounterDate: new Date('2025-12-03'),
+          visitType: 'office_established',
+          specialty: 'primary_care',
+          noteText: 'Annual wellness visit. Patient doing well. All screenings up to date.',
+          status: 'finalized',
+          finalEmCode: '99213',
+          finalEmCodeSource: 'biller',
+          finalDiagnosisJson: [{ code: 'Z00.00', description: 'Encounter for general adult medical examination', source: 'user' }],
+          finalizedByUserId: pilotBiller.id,
+          finalizedAt: new Date('2025-12-03'),
+        },
+      });
+
+      // Create audit event for finalized encounter
+      await prisma.auditEvent.create({
+        data: {
+          practiceId: pilotPractice.id,
+          encounterId: finalizedEncounter.id,
+          userId: pilotBiller.id,
+          userRole: UserRole.biller,
+          action: AuditAction.USER_FINALIZED_CODES,
+          payload: { field: 'status', from: 'ai_suggested', to: 'finalized' },
+        },
+      });
+    }
   }
 
   // Create training cases (idempotent)
@@ -223,52 +460,45 @@ async function main() {
   // Create training attempts for pilot practice users
   const trainingCases = await prisma.trainingCase.findMany({ take: 2 });
   if (trainingCases.length > 0) {
-    const existingAttempts = await prisma.trainingAttempt.findMany({
-      where: { userId: pilotProvider.id },
-      take: 1,
+    const pilotProvider = await prisma.user.findFirst({
+      where: { email: 'alpha.provider@demo.com' },
     });
 
-    if (existingAttempts.length === 0 && trainingCases[0]) {
-      await prisma.trainingAttempt.create({
-        data: {
-          userId: pilotProvider.id,
-          trainingCaseId: trainingCases[0].id,
-          userEmCode: '99213',
-          userDiagnosisCodes: JSON.stringify(['E11.9']),
-          userProcedureCodes: JSON.stringify([]),
-          aiEmCode: '99214',
-          aiDiagnosisCodes: JSON.stringify(['E11.9', 'I10']),
-          aiProcedureCodes: JSON.stringify([]),
-          scorePercent: 75,
-          matchSummary: {
-            em: { isExact: false, isNear: true },
-            diagnoses: { correctCount: 1, totalCorrect: 2, extraCount: 0, missingCodes: ['I10'], extraCodes: [] },
-            procedures: { correctCount: 0, totalCorrect: 0, extraCount: 0, missingCodes: [], extraCodes: [] },
-          },
-        },
+    if (pilotProvider) {
+      const existingAttempts = await prisma.trainingAttempt.findMany({
+        where: { userId: pilotProvider.id },
+        take: 1,
       });
+
+      if (existingAttempts.length === 0 && trainingCases[0]) {
+        await prisma.trainingAttempt.create({
+          data: {
+            userId: pilotProvider.id,
+            trainingCaseId: trainingCases[0].id,
+            userEmCode: '99213',
+            userDiagnosisCodes: JSON.stringify(['E11.9']),
+            userProcedureCodes: JSON.stringify([]),
+            aiEmCode: '99214',
+            aiDiagnosisCodes: JSON.stringify(['E11.9', 'I10']),
+            aiProcedureCodes: JSON.stringify([]),
+            scorePercent: 75,
+            matchSummary: {
+              em: { isExact: false, isNear: true },
+              diagnoses: { correctCount: 1, totalCorrect: 2, extraCount: 0, missingCodes: ['I10'], extraCodes: [] },
+              procedures: { correctCount: 0, totalCorrect: 0, extraCount: 0, missingCodes: [], extraCodes: [] },
+            },
+          },
+        });
+      }
     }
   }
 
-  // eslint-disable-next-line no-console
-  console.log('Seeded practices, users, encounters, and training cases.');
-  // eslint-disable-next-line no-console
-  console.log({
-    testPractice: { id: practice.id, name: practice.name },
-    pilotPractice: { id: pilotPractice.id, name: pilotPractice.name },
-    users: {
-      provider: { email: provider.email, role: provider.role },
-      biller: { email: biller.email, role: biller.role },
-      pilotProvider: { email: pilotProvider.email, role: pilotProvider.role },
-      pilotBiller: { email: pilotBiller.email, role: pilotBiller.role },
-    },
-  });
+  console.log('✅ Seed completed successfully');
 }
 
 main()
   .catch((e) => {
-    // eslint-disable-next-line no-console
-    console.error(e);
+    console.error('❌ Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

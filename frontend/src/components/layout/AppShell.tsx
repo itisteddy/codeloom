@@ -38,8 +38,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     []
   );
 
-  // Show a user-friendly practice name (in a real app, this would come from the practice record)
-  const practiceLabel = 'Sample Family Practice';
+  // Get practice name from user context (comes from /api/me)
+  const practiceLabel = user?.practiceName || 'Practice';
   const roleLabel = getRoleLabel(user?.role as UserRole | undefined);
 
   const renderNav = (item: NavItem) => {

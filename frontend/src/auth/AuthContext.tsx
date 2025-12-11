@@ -5,6 +5,7 @@ import { AnyUserRole, normalizeRole, UserRole } from '../types/roles';
 interface AuthUser {
   id: string;
   practiceId: string;
+  practiceName?: string; // Practice name from backend
   role: UserRole;
   email: string;
   firstName: string;
@@ -66,8 +67,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const authUser: AuthUser = {
         ...rawUser,
         role: normalizeRole(rawUser.role as AnyUserRole),
+        practiceName: rawUser.practiceName || undefined, // Include practiceName if available
       };
       const authToken: string = data.token;
+
+      // After login, fetch full user data from /api/me to get practiceName
+      try {
+        const meRes = await apiFetch('/me', {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          authUser.practiceName = meData.practiceName || undefined;
+        }
+      } catch {
+        // If /api/me fails, continue with login data
+      }
 
       setUser(authUser);
       setToken(authToken);

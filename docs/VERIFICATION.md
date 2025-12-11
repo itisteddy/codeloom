@@ -472,3 +472,144 @@ This document provides step-by-step instructions for manually verifying features
 - [ ] Password change requires minimum 8 characters
 - [ ] Password change works with valid inputs
 
+---
+
+## Phase 1 – Domain & Tenancy Cleanup
+
+### Prerequisites
+
+- Database migrations applied
+- Seed script run
+- Backend and frontend running locally
+
+### Verification Steps
+
+#### 1. Run Migrations and Seed
+
+1. **Apply migrations:**
+   ```bash
+   cd backend
+   pnpm prisma migrate deploy
+   ```
+
+2. **Run seed script:**
+   ```bash
+   pnpm prisma db seed
+   ```
+
+3. **Verify seed output:**
+   - Should see "Created sample tenant" with organization, practice, subscription, and users
+   - Should see "Created platform admin"
+   - Should see "✅ Seed completed successfully"
+
+#### 2. Verify Database Structure
+
+1. **Check Organization exists:**
+   - In Supabase SQL Editor or database client, run:
+     ```sql
+     SELECT id, name FROM "Organization" WHERE name = 'Sample Family Practice';
+     ```
+   - Should return one row
+
+2. **Check Practice is linked to Organization:**
+   ```sql
+     SELECT p.id, p.name, p."orgId", o.name as org_name
+     FROM "Practice" p
+     JOIN "Organization" o ON p."orgId" = o.id
+     WHERE p.name = 'Sample Family Practice';
+     ```
+   - Should return practice with linked organization
+
+3. **Check PracticeUser records exist:**
+   ```sql
+     SELECT pu.id, u.email, pu.role, pu.status, p.name as practice_name
+     FROM "PracticeUser" pu
+     JOIN "User" u ON pu."userId" = u.id
+     JOIN "Practice" p ON pu."practiceId" = p.id
+     WHERE p.name = 'Sample Family Practice';
+     ```
+   - Should return 3 rows (provider, biller, admin)
+
+4. **Check Subscription exists:**
+   ```sql
+     SELECT s.id, s."planType", s."billingCycle", s.status, o.name as org_name
+     FROM "Subscription" s
+     JOIN "Organization" o ON s."orgId" = o.id
+     WHERE o.name = 'Sample Family Practice';
+     ```
+   - Should return one subscription with STARTER plan
+
+#### 3. Verify Login and Practice Name Display
+
+1. **Login as Provider:**
+   - Go to http://localhost:5173/login
+   - Login with `provider@example.com` / `changeme123`
+   - After login, check the top bar/sidebar
+   - **Verify**: Practice name should display "Sample Family Practice" (from backend, not hardcoded)
+   - **Verify**: No hardcoded "Sample Family Practice" string in browser dev tools
+
+2. **Login as Biller:**
+   - Logout and login with `biller@example.com` / `changeme123`
+   - **Verify**: Practice name displays correctly
+   - **Verify**: Can access Encounters page
+
+3. **Login as Admin:**
+   - Logout and login with `admin@example.com` / `changeme123`
+   - **Verify**: Practice name displays correctly
+   - **Verify**: Can access Admin pages
+   - **Verify**: Admin pages show data scoped to the practice
+
+#### 4. Verify Backend Helpers
+
+1. **Test /api/me endpoint:**
+   ```bash
+   curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:4000/api/me
+   ```
+   - Should return user data with `practiceName` field
+   - `practiceName` should be "Sample Family Practice"
+
+2. **Verify helpers are used:**
+   - Check backend logs when accessing `/api/me`
+   - Should not see errors about missing practice/organization
+
+#### 5. Verify No Hardcoded Practice Names
+
+1. **Search frontend code:**
+   ```bash
+   cd frontend
+   grep -r "Sample Family Practice" src/ --exclude-dir=node_modules
+   ```
+   - Should return NO results (except possibly in comments)
+
+2. **Search backend code (excluding seed):**
+   ```bash
+   cd backend
+   grep -r "Sample Family Practice" src/ --exclude-dir=node_modules
+   ```
+   - Should return NO results (seed script is allowed to have it)
+
+#### 6. Verify Seed Script Idempotency
+
+1. **Run seed script twice:**
+   ```bash
+   pnpm prisma db seed
+   pnpm prisma db seed
+   ```
+   - Second run should not create duplicates
+   - Should see "reusing existing" or similar messages
+   - Database should have same number of records
+
+### Summary Checklist
+
+- [ ] Migrations applied successfully
+- [ ] Seed script runs without errors
+- [ ] Organization and Practice created with proper relationship
+- [ ] PracticeUser records created for all users
+- [ ] Subscription created for organization
+- [ ] Login works for provider, biller, and admin
+- [ ] Practice name displays in UI (from backend, not hardcoded)
+- [ ] No hardcoded "Sample Family Practice" in frontend code
+- [ ] `/api/me` returns practiceName
+- [ ] Backend helpers work correctly
+- [ ] Seed script is idempotent
+

@@ -67,11 +67,15 @@ authRouter.post('/login', async (req, res) => {
 
     const { passwordHash: _, ...safeUser } = user;
 
+    // Get practice name for response
+    const practice = user.practice;
+
     return res.json({
       token,
       user: {
         id: safeUser.id,
         practiceId: safeUser.practiceId,
+        practiceName: practice?.name || null,
         role: safeUser.role,
         email: safeUser.email,
         firstName: safeUser.firstName,

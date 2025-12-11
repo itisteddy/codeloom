@@ -16,24 +16,15 @@ router.use(requireAuth);
 // GET /api/me - Get current user info
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: {
-        practice: {
-          select: {
-            id: true,
-            name: true,
-            organization: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-      },
-    });
-
+    const { getCurrentUser, getCurrentPractice, getCurrentOrg } = await import('../utils/tenancy');
+    
+    const user = await getCurrentUser(req);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    const practice = await getCurrentPractice(req);
+    const org = await getCurrentOrg(req);
 
     res.json({
       id: user.id,
@@ -41,10 +32,10 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      practiceId: user.practiceId,
-      practiceName: user.practice.name,
-      orgId: user.practice.organization?.id || null,
-      orgName: user.practice.organization?.name || null,
+      practiceId: practice?.id || user.practiceId || null,
+      practiceName: practice?.name || null,
+      orgId: org?.id || null,
+      orgName: org?.name || null,
     });
   } catch (err: any) {
     logError('Error fetching current user', { userId: req.user!.id, error: err.message });

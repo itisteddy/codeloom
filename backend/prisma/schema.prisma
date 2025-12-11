@@ -16,6 +16,12 @@ enum UserRole {
   platform_admin
 }
 
+enum UserStatus {
+  ACTIVE
+  INVITED
+  INACTIVE
+}
+
 enum EncounterStatus {
   draft
   ai_suggested
@@ -103,6 +109,7 @@ model Subscription {
   planType         PlanType           @default(starter)
   billingCycle     BillingCycle       @default(monthly)
   status           SubscriptionStatus @default(active)
+  startDate        DateTime           @default(now())
   renewalDate      DateTime?
   // Included limits stored as JSON for flexibility
   includedLimits   Json?              // { maxEncountersPerMonth, maxProviders, maxBillers }
@@ -116,15 +123,16 @@ model Subscription {
 model Practice {
   id           String        @id @default(uuid())
   name         String
-  // Organization relationship (optional for backwards compatibility)
-  organization Organization? @relation(fields: [orgId], references: [id])
-  orgId        String?
+  // Organization relationship
+  organization Organization  @relation(fields: [orgId], references: [id])
+  orgId        String
   specialty    String?       // primary specialty of the practice
   timeZone     String        @default("America/New_York")
   // Legacy plan fields (kept for backwards compatibility, subscription takes precedence)
   planKey      String        @default("plan_a")
   planSince    DateTime      @default(now())
-  users        User[]
+  users        User[]        // Legacy: direct users via practiceId (for backward compatibility)
+  practiceUsers PracticeUser[] // New: users via PracticeUser join table
   encounters   Encounter[]
   auditEvents  AuditEvent[]
   usagePeriods UsagePeriod[]
@@ -151,13 +159,14 @@ model Practice {
 model User {
   id                  String              @id @default(uuid())
   practice            Practice            @relation(fields: [practiceId], references: [id])
-  practiceId          String
-  email               String
+  practiceId          String              // Legacy: primary practice (for backward compatibility)
+  email               String              @unique // Email is globally unique
   passwordHash        String
-  role                UserRole
+  role                UserRole            // Legacy: primary role (for backward compatibility)
   firstName           String
   lastName            String
   isActive            Boolean             @default(true)
+  practiceUsers       PracticeUser[]      // New: practice memberships via join table
   encounters          Encounter[]         @relation("EncounterProvider")
   finalizedEncounters Encounter[]         @relation("EncounterFinalizer")
   trainingAttempts    TrainingAttempt[]
@@ -168,10 +177,26 @@ model User {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
-  @@unique([practiceId, email])
+  @@unique([practiceId, email]) // Legacy constraint (for backward compatibility)
 }
 
 // User preferences for personal settings
+// PracticeUser join table: represents membership of a User in a Practice with a specific role
+model PracticeUser {
+  id          String     @id @default(uuid())
+  practice    Practice   @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  practiceId  String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  role        UserRole   // Role scoped per practice
+  status      UserStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+
+  @@unique([practiceId, userId]) // A user should have at most one membership per practice
+  @@index([practiceId])
+  @@index([userId])
+}
+
 model UserPreferences {
   id              String   @id @default(uuid())
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -323,6 +348,7 @@ model LlmEvaluationRun {
   @@index([modelId])
 }
 
+// Usage tracking per practice per billing period
 model UsagePeriod {
   id                          String   @id @default(cuid())
   practice                    Practice @relation(fields: [practiceId], references: [id])
@@ -332,12 +358,14 @@ model UsagePeriod {
   encountersCreated           Int      @default(0)
   encountersWithAiSuggestions Int      @default(0)
   encountersFinalized         Int      @default(0)
-  aiSuggestCalls              Int      @default(0)
+  aiSuggestCalls              Int      @default(0) // Alias for aiCalls
+  aiCalls                     Int      @default(0) // Explicit field name
   trainingAttempts            Int      @default(0)
   activeProviders             Int      @default(0)
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
+  @@unique([practiceId, periodStart]) // One usage period per practice per start date
   @@index([practiceId, periodStart, periodEnd])
 }
 

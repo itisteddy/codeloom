@@ -27,10 +27,18 @@ export interface OnboardingResult {
 export async function createPracticeWithAdmin(
   data: CreatePracticeRequest
 ): Promise<OnboardingResult> {
-  // Create practice
+  // Create organization first (required for practice)
+  const organization = await prisma.organization.create({
+    data: {
+      name: data.practiceName, // Use practice name as org name for now
+    },
+  });
+
+  // Create practice linked to organization
   const practice = await prisma.practice.create({
     data: {
       name: data.practiceName,
+      orgId: organization.id,
       planKey: 'plan_a', // Default to plan_a for new practices
     },
   });
