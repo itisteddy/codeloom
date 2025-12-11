@@ -7,7 +7,7 @@ const JWT_EXPIRES_IN = '1h';
 
 export interface AuthTokenPayload {
   sub: string;
-  practiceId: string;
+  practiceId: string | null; // null for PLATFORM_ADMIN users
   role: UserRole;
 }
 

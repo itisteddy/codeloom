@@ -35,6 +35,13 @@ export function canAccessAdmin(role: AnyUserRole | undefined): boolean {
 }
 
 /**
+ * Check if user is a platform admin
+ */
+export function isPlatformAdmin(role: AnyUserRole | undefined): boolean {
+  return role === 'platform_admin';
+}
+
+/**
  * Get human-readable label for a role
  */
 export function getRoleLabel(role: AnyUserRole | undefined): string {

@@ -16,7 +16,9 @@ import { BillingPage } from './pages/admin/BillingPage';
 import { TeamPage } from './pages/admin/TeamPage';
 import { SecurityPage } from './pages/admin/SecurityPage';
 import { AuthProvider, useAuth } from './auth/AuthContext';
-import { isAdmin } from './types/roles';
+import { isAdmin, isPlatformAdmin } from './types/roles';
+import { HqOverviewPage } from './pages/hq/HqOverviewPage';
+import { HqOrgDetailPage } from './pages/hq/HqOrgDetailPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -36,6 +38,21 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   if (!isAdmin(user.role)) {
+    return <Navigate to="/encounters" replace />;
+  }
+  return <>{children}</>;
+};
+
+/**
+ * Route guard for platform admin-only pages (HQ)
+ * Non-platform-admin users are redirected to /encounters
+ */
+const PlatformAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!isPlatformAdmin(user.role)) {
     return <Navigate to="/encounters" replace />;
   }
   return <>{children}</>;
@@ -175,6 +192,27 @@ const AppRoutes: React.FC = () => {
               <SettingsPage />
             </RootLayout>
           </ProtectedRoute>
+        }
+      />
+      {/* Platform Admin HQ routes */}
+      <Route
+        path="/hq"
+        element={
+          <PlatformAdminRoute>
+            <RootLayout>
+              <HqOverviewPage />
+            </RootLayout>
+          </PlatformAdminRoute>
+        }
+      />
+      <Route
+        path="/hq/orgs/:orgId"
+        element={
+          <PlatformAdminRoute>
+            <RootLayout>
+              <HqOrgDetailPage />
+            </RootLayout>
+          </PlatformAdminRoute>
         }
       />
       <Route path="/login" element={<LoginPage />} />

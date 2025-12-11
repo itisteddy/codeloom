@@ -5,8 +5,13 @@ import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 export const practicesRouter = Router();
 
 practicesRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
+  const practiceId = req.user!.practiceId;
+  if (!practiceId) {
+    return res.status(403).json({ error: 'Practice context required' });
+  }
+
   const practice = await prisma.practice.findUnique({
-    where: { id: req.user!.practiceId },
+    where: { id: practiceId },
   });
 
   if (!practice) {

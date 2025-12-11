@@ -67,7 +67,7 @@ authRouter.post('/login', async (req, res) => {
 
     const token = signAuthToken({
       sub: user.id,
-      practiceId: user.practiceId,
+      practiceId: user.practiceId || null, // Allow null for PLATFORM_ADMIN
       role: user.role,
     });
 

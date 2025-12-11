@@ -12,6 +12,9 @@ export const planRouter = Router();
 planRouter.get('/practice/plan', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const practiceId = req.user!.practiceId;
+    if (!practiceId) {
+      return res.status(403).json({ error: 'Practice context required' });
+    }
     
     const practice = await prisma.practice.findUnique({
       where: { id: practiceId },

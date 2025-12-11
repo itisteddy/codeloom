@@ -47,9 +47,16 @@ export async function getCurrentUser(req: AuthenticatedRequest): Promise<User | 
  * 
  * Phase 1: Uses user.practiceId for backward compatibility
  * Future: Will use PracticeUser join table (user can belong to multiple practices)
+ * 
+ * Note: PLATFORM_ADMIN users may not have a practice and will return null
  */
 export async function getCurrentPractice(req: AuthenticatedRequest): Promise<Practice | null> {
   if (!req.user) {
+    return null;
+  }
+
+  // PLATFORM_ADMIN users don't have a practice context
+  if (req.user.role === 'platform_admin') {
     return null;
   }
 

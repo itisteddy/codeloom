@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { IS_DEV, IS_PILOT, APP_VERSION } from '../../version';
-import { isAdmin, getRoleLabel, UserRole } from '../../types/roles';
+import { isAdmin, isPlatformAdmin, getRoleLabel, UserRole } from '../../types/roles';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -15,6 +15,7 @@ interface NavItem {
   label: string;
   to: string;
   adminOnly?: boolean; // Only show to practice_admin and platform_admin
+  platformAdminOnly?: boolean; // Only show to platform_admin
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
@@ -23,16 +24,19 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userIsAdmin = isAdmin(user?.role);
+  const userIsPlatformAdmin = isPlatformAdmin(user?.role);
 
   // Navigation based on PRD:
   // - All users: Encounters, Training, Settings (personal)
   // - Admins only: Analytics, Admin section
+  // - Platform Admins only: HQ
   const navItems: NavItem[] = useMemo(
     () => [
       { label: 'Encounters', to: '/encounters' },
       { label: 'Training', to: '/training' },
       { label: 'Analytics', to: '/analytics', adminOnly: true },
       { label: 'Admin', to: '/admin', adminOnly: true },
+      { label: 'HQ', to: '/hq', platformAdminOnly: true },
       { label: 'Settings', to: '/settings' },
     ],
     []
@@ -45,6 +49,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const renderNav = (item: NavItem) => {
     // Hide admin-only items from non-admin users
     if (item.adminOnly && !userIsAdmin) return null;
+    // Hide platform-admin-only items from non-platform-admin users
+    if (item.platformAdminOnly && !userIsPlatformAdmin) return null;
     const active = location.pathname.startsWith(item.to);
     return (
       <Link

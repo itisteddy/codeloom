@@ -9,9 +9,14 @@ export const analyticsRouter = Router();
 // GET /api/analytics/summary (biller/admin only)
 analyticsRouter.get('/summary', requireAuth, requireRole(['practice_admin', 'platform_admin']), async (req: AuthenticatedRequest, res) => {
   try {
+    const practiceId = req.user!.practiceId;
+    if (!practiceId) {
+      return res.status(403).json({ error: 'Practice context required' });
+    }
+
     // Check entitlement
     try {
-      await ensureAnalyticsAllowed(req.user!.practiceId);
+      await ensureAnalyticsAllowed(practiceId);
     } catch (err: any) {
       if (err.code === 'PLAN_NO_ANALYTICS') {
         return res.status(403).json({ error: err.message });
@@ -33,7 +38,7 @@ analyticsRouter.get('/summary', requireAuth, requireRole(['practice_admin', 'pla
     }
 
     const summary = await getPracticeAnalyticsSummary({
-      practiceId: req.user!.practiceId,
+      practiceId,
       fromDate: fromDateObj,
       toDate: toDateObj,
     });

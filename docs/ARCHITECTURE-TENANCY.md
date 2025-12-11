@@ -296,10 +296,58 @@ async function createTenant(options: CreateTenantOptions): Promise<CreateTenantR
 - Practices created within organizations
 - Users invited to practices via invite flow
 
+## Codeloom HQ (Platform Admin Console)
+
+**Codeloom HQ** is an internal-only console for Platform Admins to view and manage organizations, practices, subscriptions, and usage across the entire platform.
+
+### Access
+
+- **URL**: `/hq` (overview) and `/hq/orgs/:orgId` (org detail)
+- **Role Required**: `PLATFORM_ADMIN` only
+- **Navigation**: "HQ" nav item appears only for Platform Admin users
+
+### Features
+
+1. **HQ Overview** (`/hq`):
+   - Table of all organizations with:
+     - Organization name, plan type, billing cycle, status
+     - Practice count, user counts (providers, billers, admins)
+     - Usage metrics (AI encounters, finalized encounters, training attempts)
+     - Last activity date
+     - NPS scores (if available)
+   - Filters: Plan type, Status, Search by org name/email
+   - Click any row to view org detail
+
+2. **Org Detail** (`/hq/orgs/:orgId`):
+   - Organization header with plan info, dates, status
+   - Practices table showing:
+     - Practice name, specialty, timezone
+     - User counts by role
+     - Usage metrics per practice
+     - Last activity
+   - NPS & Feedback section:
+     - Average NPS score
+     - Response count
+     - Latest comments (last 10)
+
+### Backend APIs
+
+- `GET /api/hq/overview`: Returns list of organizations with aggregated usage
+- `GET /api/hq/orgs/:orgId`: Returns detailed org information
+
+All HQ routes are protected by `requireRole([UserRole.platform_admin])` middleware.
+
+### Security
+
+- Only `PLATFORM_ADMIN` users can access HQ routes
+- Non-platform-admin users are redirected to `/encounters` if they attempt to access HQ
+- All HQ API calls are logged for audit purposes
+
 ## Notes
 
 - Practice names are **never** hardcoded in UI code (except in seed scripts/tests)
 - Practice name comes from `/api/me` endpoint which uses backend helpers
 - All data is scoped to the current practice via `getCurrentPractice(req)`
 - Multi-practice support is prepared but not yet implemented in UI
+- Platform Admins don't have a practice context and use HQ for cross-tenant visibility
 

@@ -4,6 +4,58 @@ All notable changes to the Codeloom project will be documented in this file.
 
 ---
 
+## Phase 3 – Platform Admin Console (Codeloom HQ)
+
+### Backend Changes
+
+- **HQ Routes** (`src/routes/hq.ts`):
+  - `GET /api/hq/overview`: Returns list of organizations with plan, usage, and NPS summary
+  - `GET /api/hq/orgs/:orgId`: Returns detailed organization information with practices and NPS
+  - All routes protected by `requireRole([UserRole.platform_admin])` middleware
+  - Supports filtering by planType, status, and search query
+
+- **Auth Updates**:
+  - Updated `AuthenticatedUser` interface to allow `practiceId: string | null` for PLATFORM_ADMIN users
+  - Updated `AuthTokenPayload` to allow nullable `practiceId`
+  - Updated `getCurrentPractice()` to return `null` for PLATFORM_ADMIN users
+  - Updated login route to handle platform admins without practice context
+
+- **Type Safety**:
+  - Added practiceId null checks in routes that require practice context
+  - Updated admin routes to check for practice context before proceeding
+
+### Frontend Changes
+
+- **HQ Pages**:
+  - `HqOverviewPage.tsx`: Overview table with filters and organization list
+  - `HqOrgDetailPage.tsx`: Detailed org view with practices table and NPS section
+  - Both pages use consistent styling with existing app
+
+- **Navigation & Routing**:
+  - Added "HQ" nav item (visible only to Platform Admin users)
+  - Added `PlatformAdminRoute` guard component
+  - Added routes: `/hq` and `/hq/orgs/:orgId`
+  - Non-platform-admin users are redirected to `/encounters` if they attempt to access HQ
+
+- **API Client** (`src/api/hq.ts`):
+  - `getHqOverview()`: Fetches organization overview with optional filters
+  - `getHqOrgDetail()`: Fetches detailed org information
+
+- **Role Helpers**:
+  - Added `isPlatformAdmin()` helper function to `src/types/roles.ts`
+
+### Dependencies
+
+- Added `date-fns` to frontend for date formatting in HQ pages
+
+### Notes
+
+- HQ is read-only in Phase 3 (no mutations)
+- All data comes from real database queries (no mock data)
+- Platform Admins can still access regular app features if needed
+
+---
+
 ## Phase 2 – Tenant Provisioning (Codeloom HQ / create-tenant)
 
 ### Backend Changes

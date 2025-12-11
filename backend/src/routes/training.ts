@@ -75,9 +75,14 @@ trainingRouter.post('/cases/:id/attempt', requireAuth, async (req: Authenticated
       return res.status(400).json({ error: 'userProcedureCodes must be an array' });
     }
 
+    const practiceId = req.user!.practiceId;
+    if (!practiceId) {
+      return res.status(403).json({ error: 'Practice context required' });
+    }
+
     // Check entitlement
     try {
-      await ensureTrainingAllowed(req.user!.practiceId);
+      await ensureTrainingAllowed(practiceId);
     } catch (err: any) {
       if (err.code === 'PLAN_NO_TRAINING') {
         return res.status(403).json({ error: err.message });
@@ -94,7 +99,7 @@ trainingRouter.post('/cases/:id/attempt', requireAuth, async (req: Authenticated
     });
 
     // Increment usage
-    await incrementUsage(req.user!.practiceId, 'trainingAttempts');
+    await incrementUsage(practiceId, 'trainingAttempts');
 
     return res.json(result);
   } catch (error: any) {

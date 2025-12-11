@@ -11,7 +11,11 @@ export const practiceConfigRouter = Router();
 // GET /api/practice/config - get practice configuration
 practiceConfigRouter.get('/config', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const config = await getPracticeConfiguration(req.user!.practiceId);
+      const practiceId = req.user!.practiceId;
+      if (!practiceId) {
+        return res.status(403).json({ error: 'Practice context required' });
+      }
+      const config = await getPracticeConfiguration(practiceId);
     return res.json(config);
   } catch (error: any) {
     // eslint-disable-next-line no-console
@@ -40,7 +44,11 @@ practiceConfigRouter.patch(
         });
       }
 
-      const config = await updatePracticeConfiguration(req.user!.practiceId, updates);
+      const practiceId = req.user!.practiceId;
+      if (!practiceId) {
+        return res.status(403).json({ error: 'Practice context required' });
+      }
+      const config = await updatePracticeConfiguration(practiceId, updates);
       return res.json(config);
     } catch (error: any) {
       // eslint-disable-next-line no-console

@@ -18,13 +18,17 @@ function requireAdminRole(req: AuthenticatedRequest, res: Response, next: NextFu
   if (!isAdmin) {
     return res.status(403).json({ error: 'Admin role required' });
   }
+  // Admin routes require practice context (platform_admin should use HQ routes)
+  if (!req.user!.practiceId) {
+    return res.status(403).json({ error: 'Practice context required' });
+  }
   next();
 }
 
 // GET /admin/billing - Get practice billing/plan info
 router.get('/billing', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
 
     const practice = await prisma.practice.findUnique({
       where: { id: practiceId },
@@ -122,7 +126,7 @@ router.get('/billing', requireAdminRole, async (req: AuthenticatedRequest, res: 
 // GET /admin/team - List team members
 router.get('/team', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
 
     const users = await prisma.user.findMany({
       where: { practiceId },
@@ -177,7 +181,7 @@ router.get('/team', requireAdminRole, async (req: AuthenticatedRequest, res: Res
 // POST /admin/team/invite - Invite a new user
 router.post('/team/invite', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
     const { email, role } = req.body as { email: string; role: UserRole };
 
     if (!email || !role) {
@@ -242,7 +246,7 @@ router.post('/team/invite', requireAdminRole, async (req: AuthenticatedRequest, 
 // POST /admin/team/:id/role - Change user role
 router.post('/team/:id/role', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
     const userId = req.params.id;
     const { role } = req.body as { role: UserRole };
 
@@ -274,7 +278,7 @@ router.post('/team/:id/role', requireAdminRole, async (req: AuthenticatedRequest
 // POST /admin/team/:id/deactivate - Deactivate user
 router.post('/team/:id/deactivate', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
     const userId = req.params.id;
 
     // Prevent self-deactivation
@@ -301,7 +305,7 @@ router.post('/team/:id/deactivate', requireAdminRole, async (req: AuthenticatedR
 // POST /admin/team/:id/activate - Reactivate user
 router.post('/team/:id/activate', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
     const userId = req.params.id;
 
     const result = await prisma.user.updateMany({
@@ -323,7 +327,7 @@ router.post('/team/:id/activate', requireAdminRole, async (req: AuthenticatedReq
 // DELETE /admin/team/invite/:id - Cancel pending invite
 router.delete('/team/invite/:id', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const practiceId = req.user!.practiceId;
+    const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
     const inviteId = req.params.id;
 
     const result = await prisma.userInvite.deleteMany({
@@ -343,7 +347,7 @@ router.delete('/team/invite/:id', requireAdminRole, async (req: AuthenticatedReq
 
 // GET /admin/security - Get PHI security settings
 router.get('/security', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
-  const practiceId = req.user!.practiceId;
+  const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
   try {
     const practice = await prisma.practice.findUnique({
       where: { id: practiceId },
@@ -370,7 +374,7 @@ router.get('/security', requireAdminRole, async (req: AuthenticatedRequest, res:
 
 // POST /admin/security - Update PHI security settings
 router.post('/security', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
-  const practiceId = req.user!.practiceId;
+  const practiceId = req.user!.practiceId!; // Safe after requireAdminRole check
   try {
     const { phiRetentionDays, storePhiAtRest } = req.body as {
       phiRetentionDays?: number | null;

@@ -692,3 +692,88 @@ This document provides step-by-step instructions for manually verifying features
 - [ ] Backend helpers work correctly
 - [ ] Seed script is idempotent
 
+---
+
+## Phase 3 – Platform Admin Console (Codeloom HQ)
+
+### Manual Verification Steps
+
+1. **Login as Platform Admin**:
+   - Use the seeded platform admin user:
+     - Email: `platform-admin@codeloom.app`
+     - Password: `changeme123`
+
+2. **Verify HQ Navigation**:
+   - After login, confirm you see "HQ" in the navigation sidebar
+   - Click "HQ" to navigate to `/hq`
+
+3. **Test HQ Overview Page**:
+   - Should display a table of organizations
+   - Should show at least "Sample Family Practice" (from seed)
+   - Should show any additional tenants created via CLI
+   - Test filters:
+     - Filter by plan type (STARTER, GROWTH, ENTERPRISE)
+     - Filter by status (Active, Trial, Canceled, Past Due)
+     - Search by organization name
+   - Verify columns display correctly:
+     - Organization name
+     - Plan (planType + billingCycle)
+     - Status badge (color-coded)
+     - Practices count
+     - Providers, Billers counts
+     - AI Encounters (current period)
+     - Last Activity date
+     - NPS score (if available)
+
+4. **Test Org Detail Page**:
+   - Click on any organization row in the overview
+   - Should navigate to `/hq/orgs/:orgId`
+   - Verify org header shows:
+     - Organization name
+     - Status badge
+     - Plan info (planType + billingCycle)
+     - Start date and renewal date
+   - Verify practices table shows:
+     - Practice name, specialty, timezone
+     - Provider, Biller, Admin counts
+     - AI Encounters for current period
+     - Last activity date
+   - Verify NPS section (if data exists):
+     - Average NPS score
+     - Response count
+     - Latest comments (up to 10)
+
+5. **Test Access Control**:
+   - Log out and log in as `provider@example.com`
+   - Confirm "HQ" nav item is NOT visible
+   - Try to access `/hq` directly via URL
+   - Should be redirected to `/encounters` or see "Not authorized"
+   - Repeat with `biller@example.com` and `admin@example.com`
+   - None should see HQ nav or be able to access HQ routes
+
+6. **Verify Data Accuracy**:
+   - Compare HQ overview numbers with:
+     - Actual practice data in database (via Prisma Studio)
+     - Regular Analytics page (for practice admins)
+   - Verify usage metrics match current period
+   - Verify user counts match PracticeUser records
+
+7. **Test Edge Cases**:
+   - Organization with no practices (should show 0 practices)
+   - Organization with no usage (should show 0 for all metrics)
+   - Organization with no NPS data (should show "No NPS data yet")
+   - Empty search results (should show "No organizations found")
+
+### Summary Checklist
+
+- [ ] Platform admin can log in and see HQ nav
+- [ ] HQ overview page loads and shows organizations
+- [ ] Filters work (plan type, status, search)
+- [ ] Org detail page loads and shows practice details
+- [ ] NPS data displays correctly (if available)
+- [ ] Non-platform-admin users cannot see HQ nav
+- [ ] Non-platform-admin users cannot access HQ routes
+- [ ] All data comes from real database (no mock data)
+- [ ] Backend HQ routes typecheck correctly
+- [ ] Frontend typechecks pass
+

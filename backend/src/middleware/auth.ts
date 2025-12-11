@@ -4,7 +4,7 @@ import { verifyAuthToken } from '../config/auth';
 
 export interface AuthenticatedUser {
   id: string;
-  practiceId: string;
+  practiceId: string | null; // null for PLATFORM_ADMIN users
   role: UserRole;
 }
 
@@ -27,7 +27,7 @@ export function requireAuth(
     const payload = verifyAuthToken(token);
     req.user = {
       id: payload.sub,
-      practiceId: payload.practiceId,
+      practiceId: payload.practiceId || null, // Allow null for PLATFORM_ADMIN
       role: payload.role,
     };
     return next();
