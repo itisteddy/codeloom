@@ -2,6 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { config } from 'dotenv';
+import path from 'path';
+
+// Load .env file from backend directory
+config({ path: path.resolve(__dirname, '../.env') });
+
 import { config as appConfig } from './config';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
