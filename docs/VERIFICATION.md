@@ -474,6 +474,85 @@ This document provides step-by-step instructions for manually verifying features
 
 ---
 
+## Phase 2 – Tenant Provisioning (Codeloom HQ / create-tenant)
+
+### Manual Verification Steps
+
+1. **Run migrations and seed (if needed)**:
+   ```bash
+   cd backend
+   pnpm prisma migrate deploy
+   pnpm prisma db seed
+   ```
+
+2. **Test the create-tenant CLI tool**:
+   ```bash
+   cd backend
+   pnpm create-tenant \
+     --org-name "Sunrise Primary Care LLC" \
+     --practice-name "Sunrise Primary Care" \
+     --admin-email "owner@sunrisepeds.com" \
+     --plan-type STARTER \
+     --billing-cycle MONTHLY
+   ```
+
+   Expected output:
+   - Success message with summary of created entities
+   - Organization ID, Practice ID, Subscription details
+   - Admin user email and ID
+   - PracticeUser membership details
+   - Usage period initialization
+   - Default password reminder
+
+3. **Verify in database** (using Prisma Studio or SQL):
+   ```bash
+   pnpm prisma studio
+   ```
+   
+   Check:
+   - New Organization exists with name "Sunrise Primary Care LLC"
+   - New Practice exists with name "Sunrise Primary Care" linked to the org
+   - Subscription exists for that org with STARTER plan, MONTHLY billing
+   - Admin user exists with email "owner@sunrisepeds.com"
+   - PracticeUser row links the admin user to the practice with PRACTICE_ADMIN role
+   - UsagePeriod exists for the current month for that practice
+
+4. **Test idempotency**:
+   - Run the same `create-tenant` command again with identical parameters
+   - Should complete successfully without errors
+   - Should log warnings about reusing existing entities
+   - Should not create duplicate records
+
+5. **Test with different options**:
+   ```bash
+   pnpm create-tenant \
+     --org-name "Metro Cardiology Group" \
+     --admin-email "admin@metrocards.com" \
+     --admin-name "Dr. Jane Smith" \
+     --plan-type GROWTH \
+     --billing-cycle ANNUAL \
+     --specialty "cardiology" \
+     --time-zone "America/New_York"
+   ```
+
+6. **Verify existing seeded tenant still works**:
+   - Login with `provider@example.com` / `changeme123`
+   - Login with `biller@example.com` / `changeme123`
+   - Login with `admin@example.com` / `changeme123`
+   - All should work and show "Sample Family Practice" as practice name
+
+7. **Test login with newly created admin** (if login system supports it):
+   - Login with `owner@sunrisepeds.com` / `changeme123` (or custom password from env)
+   - Should see Admin pages (Team, Billing & Plan, Security & Data)
+   - Top bar should show "Sunrise Primary Care" as practice name
+   - All admin functionality should be scoped to the new practice
+
+8. **Verify seed script uses same helper**:
+   - Check that seed script output shows it's using `createTenant()` helper
+   - Verify seed creates same structure as CLI tool
+
+---
+
 ## Phase 1 – Domain & Tenancy Cleanup
 
 ### Prerequisites

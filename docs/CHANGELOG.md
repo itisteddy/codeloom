@@ -4,6 +4,49 @@ All notable changes to the Codeloom project will be documented in this file.
 
 ---
 
+## Phase 2 – Tenant Provisioning (Codeloom HQ / create-tenant)
+
+### Backend Changes
+
+- **Tenancy Service** (`src/services/tenancy.ts`):
+  - Added `createTenant()` helper function for reusable tenant creation
+  - Creates Organization → Practice → Subscription → Admin User → PracticeUser → UsagePeriod chain
+  - Idempotent: reuses existing entities if they exist
+  - Configurable via options (orgName, practiceName, adminEmail, planType, billingCycle, etc.)
+  - Default admin password from `DEFAULT_TENANT_ADMIN_PASSWORD` env var (or "changeme123")
+
+- **CLI Script** (`scripts/createTenant.ts`):
+  - New `create-tenant` CLI tool for platform admins to provision new tenants
+  - Command-line argument parsing (--org-name, --practice-name, --admin-email, etc.)
+  - Validates arguments and provides helpful error messages
+  - Prints summary of created entities on success
+  - Added to `package.json` scripts: `pnpm create-tenant`
+
+- **Seed Script Refactor** (`prisma/seed.ts`):
+  - Refactored to use `createTenant()` helper for consistency
+  - Sample tenant creation now shares same logic as CLI tool
+  - Still creates Provider and Biller users separately (for dev convenience)
+  - Ensures no drift between seed and CLI tenant creation
+
+### Documentation Updates
+
+- **ARCHITECTURE-TENANCY.md**:
+  - Added "Tenant Provisioning" section
+  - Documents CLI tool usage and backend helper
+  - Explains idempotency and default password behavior
+
+- **CHANGELOG.md**: This entry
+
+- **VERIFICATION.md**: Added Phase 2 verification steps
+
+### Notes
+
+- Self-serve signup not yet implemented (future phase)
+- Platform Admin web console not yet implemented (future phase)
+- All tenant creation currently via CLI tool for internal use
+
+---
+
 ## Phase 1 – Domain & Tenancy Cleanup
 
 ### Backend Changes

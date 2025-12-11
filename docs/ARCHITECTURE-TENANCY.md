@@ -224,14 +224,75 @@ The seed script (`backend/prisma/seed.ts`) creates:
 - Support users belonging to multiple practices
 - Remove `practiceId` from User model (breaking change)
 
-## Creating Tenants
+## Tenant Provisioning
+
+Codeloom has two types of administrators:
+- **Platform Admins**: Internal Codeloom staff who manage the platform and create new tenants
+- **Practice Admins**: Customer-side administrators who manage their practice's team, billing, and settings
+
+### Creating New Tenants
+
+New tenants (Organizations + Practices + Subscriptions + Admin Users) are created via an internal CLI tool. Self-serve signup is not yet enabled; pilots are provisioned manually by platform admins.
+
+#### CLI Tool: `create-tenant`
+
+**Location:** `backend/scripts/createTenant.ts`
+
+**Usage:**
+```bash
+pnpm create-tenant \
+  --org-name "Sunrise Primary Care LLC" \
+  --practice-name "Sunrise Primary Care" \
+  --admin-email "owner@sunrisepeds.com" \
+  --plan-type STARTER \
+  --billing-cycle MONTHLY
+```
+
+**What it creates:**
+1. **Organization**: The legal customer entity
+2. **Practice**: A clinical practice under that organization
+3. **Subscription**: A subscription plan (STARTER, GROWTH, or ENTERPRISE) with billing cycle
+4. **Admin User**: A Practice Admin user with the specified email
+5. **PracticeUser**: Links the admin user to the practice with PRACTICE_ADMIN role
+6. **UsagePeriod**: Initializes usage tracking for the current billing period
+
+**Idempotency:**
+- The tool is idempotent - it will reuse existing entities if they exist
+- Safe to run multiple times with the same parameters
+- Logs warnings when reusing existing entities
+
+**Default Admin Password:**
+- Default password is `changeme123` (or value from `DEFAULT_TENANT_ADMIN_PASSWORD` env var)
+- Admins should reset their password via the password reset flow after first login
+
+#### Backend Helper: `createTenant()`
+
+**Location:** `backend/src/services/tenancy.ts`
+
+The CLI tool uses the reusable `createTenant()` helper function, which is also used by the seed script to ensure consistency.
+
+**Function signature:**
+```typescript
+async function createTenant(options: CreateTenantOptions): Promise<CreateTenantResult>
+```
+
+**Options:**
+- `orgName`: Organization name (required)
+- `practiceName`: Practice name (optional, defaults to orgName)
+- `adminEmail`: Admin user email (required)
+- `adminName`: Admin user full name (optional, defaults to "Admin User")
+- `planType`: Plan type - STARTER, GROWTH, or ENTERPRISE (default: STARTER)
+- `billingCycle`: Billing cycle - MONTHLY or ANNUAL (default: MONTHLY)
+- `status`: Subscription status (default: ACTIVE)
+- `specialty`: Practice specialty (optional)
+- `timeZone`: Practice timezone (default: "America/Chicago")
 
 **Development:**
 - Run seed script: `pnpm prisma db seed`
-- Creates sample tenant automatically
+- Creates sample tenant automatically using the same `createTenant()` helper
 
 **Production (Future):**
-- Platform admins will create organizations via admin console
+- Platform admins will create organizations via admin console (future phase)
 - Practices created within organizations
 - Users invited to practices via invite flow
 

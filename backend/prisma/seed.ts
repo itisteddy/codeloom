@@ -1,100 +1,31 @@
-import { PrismaClient, UserRole, UserStatus, TrainingDifficulty, AuditAction, PlanType, BillingCycle, SubscriptionStatus } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, TrainingDifficulty, AuditAction, PlanType, BillingCycle } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
+import { createTenant } from '../src/services/tenancy';
 
 const prisma = new PrismaClient();
 
 /**
- * Creates a sample tenant with Organization, Practice, Subscription, and Users
- * This is idempotent - will reuse existing entities if they exist
+ * Creates a sample tenant with Organization, Practice, Subscription, and Admin User
+ * Uses the reusable createTenant helper to ensure consistency with CLI tooling
  */
 async function createSampleTenant() {
+  // Use the reusable createTenant helper
+  const tenant = await createTenant({
+    orgName: 'Sample Family Practice',
+    practiceName: 'Sample Family Practice',
+    adminEmail: 'admin@example.com',
+    adminName: 'Admin User',
+    planType: PlanType.starter,
+    billingCycle: BillingCycle.monthly,
+    specialty: 'primary_care',
+    timeZone: 'America/Chicago',
+  });
+
+  // Now create Provider and Biller users for this practice
   const passwordHash = await bcrypt.hash('changeme123', 10);
 
-  // 1. Create or get Organization
-  let organization = await prisma.organization.findFirst({
-    where: { name: 'Sample Family Practice' },
-  });
-
-  if (!organization) {
-    organization = await prisma.organization.create({
-      data: {
-        name: 'Sample Family Practice',
-        billingContactName: 'Sample Owner',
-        billingContactEmail: 'owner@example.com',
-      },
-    });
-  }
-
-  // 2. Create or get Practice
-  // First, try to find "Sample Family Practice"
-  let practice = await prisma.practice.findFirst({
-    where: { name: 'Sample Family Practice' },
-  });
-
-  if (!practice) {
-    // If "Sample Family Practice" doesn't exist, check for "Codeloom Test Practice" (old name)
-    const oldPractice = await prisma.practice.findFirst({
-      where: { name: 'Codeloom Test Practice' },
-    });
-
-    if (oldPractice) {
-      // Rename old practice to new name and link to organization
-      practice = await prisma.practice.update({
-        where: { id: oldPractice.id },
-        data: {
-          name: 'Sample Family Practice',
-          orgId: organization.id,
-        },
-      });
-    } else {
-      // Create new practice
-      practice = await prisma.practice.create({
-        data: {
-          name: 'Sample Family Practice',
-          orgId: organization.id,
-          specialty: 'primary_care',
-          timeZone: 'America/Chicago',
-        },
-      });
-    }
-  } else if (!practice.orgId) {
-    // Update existing practice to link to organization
-    practice = await prisma.practice.update({
-      where: { id: practice.id },
-      data: { orgId: organization.id },
-    });
-  }
-
-  // 3. Create or get Subscription
-  let subscription = await prisma.subscription.findFirst({
-    where: { orgId: organization.id },
-  });
-
-  if (!subscription) {
-    const now = new Date();
-    const renewalDate = new Date(now);
-    renewalDate.setMonth(renewalDate.getMonth() + 1);
-
-    subscription = await prisma.subscription.create({
-      data: {
-        orgId: organization.id,
-        planType: PlanType.starter,
-        billingCycle: BillingCycle.monthly,
-        status: SubscriptionStatus.active,
-        startDate: now,
-        renewalDate: renewalDate,
-        includedLimits: {
-          maxEncountersPerMonth: 200,
-          maxProviders: 3,
-          maxBillers: 2,
-        },
-      },
-    });
-  }
-
-  // 4. Create Users
-  const usersToCreate = [
+  const additionalUsers = [
     {
       email: 'provider@example.com',
       firstName: 'Test',
@@ -107,17 +38,11 @@ async function createSampleTenant() {
       lastName: 'Biller',
       role: UserRole.biller,
     },
-    {
-      email: 'admin@example.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: UserRole.practice_admin,
-    },
   ];
 
-  const createdUsers = [];
+  const createdUsers = [tenant.adminUser];
 
-  for (const userData of usersToCreate) {
+  for (const userData of additionalUsers) {
     // Check if user exists by email
     let user = await prisma.user.findFirst({
       where: { email: userData.email },
@@ -127,7 +52,7 @@ async function createSampleTenant() {
       // Create user with practiceId for backward compatibility
       user = await prisma.user.create({
         data: {
-          practiceId: practice.id,
+          practiceId: tenant.practice.id,
           email: userData.email,
           passwordHash,
           role: userData.role,
@@ -136,26 +61,26 @@ async function createSampleTenant() {
         },
       });
     } else {
-      // Update existing user to link to the new practice (migrate from old practice)
+      // Update existing user to link to the practice
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { 
-          practiceId: practice.id,
-          role: userData.role, // Update role to match seed data
+        data: {
+          practiceId: tenant.practice.id,
+          role: userData.role,
         },
       });
     }
 
-    // 5. Create PracticeUser join record
+    // Create PracticeUser join record
     const practiceUser = await prisma.practiceUser.upsert({
       where: {
         practiceId_userId: {
-          practiceId: practice.id,
+          practiceId: tenant.practice.id,
           userId: user.id,
         },
       },
       create: {
-        practiceId: practice.id,
+        practiceId: tenant.practice.id,
         userId: user.id,
         role: userData.role,
         status: UserStatus.ACTIVE,
@@ -170,9 +95,9 @@ async function createSampleTenant() {
   }
 
   return {
-    organization,
-    practice,
-    subscription,
+    organization: tenant.org,
+    practice: tenant.practice,
+    subscription: tenant.subscription,
     users: createdUsers,
   };
 }
