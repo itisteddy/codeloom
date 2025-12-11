@@ -21,6 +21,7 @@ import { inviteAcceptRouter } from './routes/inviteAccept';
 import { pilotAdminRouter } from './routes/pilotAdmin';
 import { npsRouter } from './routes/nps';
 import adminRouter from './routes/admin';
+import meRouter from './routes/me';
 import devRouter from './routes/dev';
 import { metricsMiddleware } from './middleware/metrics';
 import { requestLoggerMiddleware } from './middleware/requestLogger';
@@ -52,6 +53,7 @@ app.use('/api', planRouter);
 app.use('/api', npsRouter);
 app.use('/api/practice', practiceConfigRouter);
 app.use('/api/invite', inviteAcceptRouter);
+app.use('/api/me', meRouter);
 app.use('/api/dev', devRouter);
 app.use('/health', healthRouter);
 

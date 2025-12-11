@@ -360,3 +360,115 @@ This document provides step-by-step instructions for manually verifying features
 - [ ] Role change works from dropdown
 - [ ] Invite form creates pending invite
 
+---
+
+## Sub-phase C – Per-User Settings / Profile
+
+### Prerequisites
+
+- Deployed frontend and backend with Sub-phase C changes
+- User accounts with different roles (Provider, Biller, Practice Admin)
+
+### Verification Steps
+
+#### 1. Verify Settings Page Access
+
+1. **Login as any user**
+   - Go to login page and login
+
+2. **Navigate to Settings**
+   - Click "Settings" in the sidebar
+   - Should see Settings page with Profile, Preferences, and Security sections
+
+#### 2. Verify Profile Section
+
+1. **View Profile Info**
+   - Should see current first name and last name in input fields
+   - Email should be shown but disabled (read-only)
+   - Role badge should display correctly
+
+2. **Update Profile**
+   - Change first name and/or last name
+   - Click "Save Profile"
+   - Should see success message
+   - Refresh page and verify changes persist
+
+#### 3. Verify Preferences Section
+
+1. **Theme Selection**
+   - Should see radio buttons for System/Light/Dark
+   - Select different theme and save
+   - Verify selection persists after refresh
+
+2. **Time Zone**
+   - Should see dropdown with timezone options
+   - Select different timezone and save
+   - Verify selection persists after refresh
+
+3. **Date Format**
+   - Should see radio buttons for MM/DD/YYYY and DD/MM/YYYY
+   - Select different format and save
+   - Verify selection persists after refresh
+
+4. **Notification Preferences**
+   - Toggle email assignment notifications
+   - Toggle weekly summary email
+   - Click "Save Preferences"
+   - Verify selections persist after refresh
+
+5. **Role-Specific Settings (Provider)**
+   - Login as Provider
+   - Should see "Provider Settings" section
+   - Toggle "Run Codeloom automatically after saving note"
+   - Save and verify persistence
+
+6. **Role-Specific Settings (Biller)**
+   - Login as Biller
+   - Should see "Biller Settings" section
+   - Toggle "Auto-open Suggestions panel when opening encounter"
+   - Save and verify persistence
+
+#### 4. Verify Password Change
+
+1. **Attempt with wrong current password**
+   - Enter wrong current password
+   - Enter new password and confirm
+   - Click "Change Password"
+   - Should see error: "Current password is incorrect"
+
+2. **Attempt with mismatched passwords**
+   - Enter correct current password
+   - Enter different new passwords
+   - Click "Change Password"
+   - Should see error: "New passwords do not match"
+
+3. **Attempt with short password**
+   - Enter correct current password
+   - Enter password less than 8 characters
+   - Click "Change Password"
+   - Should see error about minimum length
+
+4. **Successful password change**
+   - Enter correct current password
+   - Enter new password (8+ characters) in both fields
+   - Click "Change Password"
+   - Should see success message
+   - Logout and login with new password
+   - Should be able to login successfully
+
+### Summary Checklist
+
+- [ ] Settings page accessible to all users
+- [ ] Profile shows correct user info
+- [ ] Profile name can be updated
+- [ ] Theme preference can be changed and persists
+- [ ] Time zone can be selected and persists
+- [ ] Date format can be changed and persists
+- [ ] Notification toggles work and persist
+- [ ] Provider-specific settings appear for providers
+- [ ] Biller-specific settings appear for billers
+- [ ] Password change validates current password
+- [ ] Password change requires matching passwords
+- [ ] Password change requires minimum 8 characters
+- [ ] Password change works with valid inputs
+

@@ -114,3 +114,43 @@ All notable changes to the Codeloom project will be documented in this file.
 
 - Migration: `20251210_org_subscription_model` - Adds Organization, Subscription models and extends Practice/UsagePeriod
 
+---
+
+## Sub-phase C – Per-User Settings / Profile
+
+### Backend Changes
+
+- **UserPreferences Model**: New model for storing user-specific settings:
+  - theme (light/dark/system)
+  - timeZone (user's preferred timezone)
+  - dateFormat (MM/DD/YYYY or DD/MM/YYYY)
+  - notificationPrefs (JSON: emailAssignments, emailWeeklySummary)
+  - Role-specific preferences (providerPrefs, billerPrefs, adminPrefs)
+- **New /api/me Routes** (`src/routes/me.ts`):
+  - `GET /api/me` - Get current user info with practice/org context
+  - `GET /api/me/settings` - Get user preferences
+  - `PUT /api/me/settings` - Update user preferences
+  - `PUT /api/me/profile` - Update user name
+  - `POST /api/me/change-password` - Change password with validation
+
+### Frontend Changes
+
+- **Settings API Client** (`src/api/me.ts`):
+  - Types for CurrentUser, UserSettings, ChangePasswordRequest
+  - Functions: getCurrentUser, getSettings, updateSettings, updateProfile, changePassword
+- **Settings Page Enhanced** (`/settings`):
+  - **Profile Section**: Edit first/last name, view email and role
+  - **Preferences Section**:
+    - Theme selector (System/Light/Dark)
+    - Time zone dropdown (US timezones + UTC)
+    - Date format selector
+    - Notification preferences (email toggles)
+    - Role-specific settings:
+      - Provider: "Run Codeloom automatically after saving note"
+      - Biller: "Auto-open Suggestions panel when opening encounter"
+  - **Security Section**: Password change form with validation
+
+### Database Migration
+
+- Migration: `20251210_user_preferences` - Adds UserPreferences table with 1:1 relationship to User
+
