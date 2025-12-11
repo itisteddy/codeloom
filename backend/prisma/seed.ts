@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserStatus, TrainingDifficulty, AuditAction, PlanType, BillingCycle } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, TrainingDifficulty, AuditAction, PlanType, BillingCycle, SubscriptionStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { createTenant } from '../src/services/tenancy';
@@ -40,7 +40,12 @@ async function createSampleTenant() {
     },
   ];
 
-  const createdUsers = [tenant.adminUser];
+  const createdUsers: Array<{ user: any; practiceUser: any }> = [
+    {
+      user: tenant.adminUser,
+      practiceUser: tenant.practiceUser,
+    },
+  ];
 
   for (const userData of additionalUsers) {
     // Check if user exists by email
