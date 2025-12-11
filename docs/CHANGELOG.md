@@ -79,3 +79,38 @@ All notable changes to the Codeloom project will be documented in this file.
     - "See how Codeloom is being used across your practice" subheading
   - Applied consistent Card-based UI styling
 
+---
+
+## Sub-phase B – Tenant Model & Admin Team/Billing Skeleton
+
+### Backend Changes
+
+- **Organization Model**: New model for customer accounts with billing contact info
+- **Subscription Model**: New model with planType (starter/growth/enterprise), billingCycle (monthly/annual), status, renewalDate, and includedLimits
+- **UsagePeriod Enhanced**: Added `encountersWithAiSuggestions`, `encountersFinalized`, `activeProviders` fields
+- **Usage Service** (`src/services/usageService.ts`):
+  - `getOrCreateCurrentPeriodUsage()` - Gets/creates current billing period
+  - `incrementEncounterWithAiSuggestion()` - Track AI suggestion usage
+  - `incrementEncounterFinalized()` - Track finalized encounters
+  - `incrementTrainingAttempt()` - Track training activity
+  - `getCurrentUsageSummary()` - Get usage summary for billing
+- **Admin Billing API Enhanced**: 
+  - Now returns planType, billingCycle, subscriptionStatus, renewalDate
+  - Returns structured `includedLimits` and `currentUsage` objects
+  - Returns `features` object for training/analytics/exports flags
+
+### Frontend Changes
+
+- **BillingInfo Type Updated**: Added PlanType, BillingCycle, SubscriptionStatus, IncludedLimits, CurrentUsage, BillingFeatures
+- **Admin Billing Page Enhanced**:
+  - Shows plan type (Starter/Growth/Enterprise) with status badge
+  - Shows billing cycle and renewal date
+  - Detailed usage stats: encounters created, finalized, AI calls, training attempts
+  - Usage progress bar with color-coded thresholds
+  - Contact support CTA for plan changes
+- **Team Page**: Updated role badge logic for practice_admin/platform_admin
+
+### Database Migration
+
+- Migration: `20251210_org_subscription_model` - Adds Organization, Subscription models and extends Practice/UsagePeriod
+
