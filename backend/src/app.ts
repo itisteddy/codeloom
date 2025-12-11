@@ -38,22 +38,29 @@ const allowedOrigins = [
   'http://localhost:3000',
 ].filter(Boolean); // Remove any undefined/null values
 
+// Log allowed origins for debugging
+console.log('CORS allowed origins:', allowedOrigins);
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
+      // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // In development, allow all origins
-        if (appConfig.isDev) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
+        return callback(null, true);
       }
+      
+      // In development, allow all origins
+      if (appConfig.isDev) {
+        return callback(null, true);
+      }
+      
+      // For production, reject with false instead of throwing error
+      // This returns proper CORS headers instead of crashing
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      return callback(null, false);
     },
     credentials: true,
   })
